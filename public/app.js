@@ -392,6 +392,10 @@ function scheduleReverseGeocode(lat, lon) {
   }, LOCATION_DEBOUNCE_MS);
 }
 
+function isStaleReverseLookup(requestId) {
+  return requestId !== reverseLookupRequestId;
+}
+
 /**
  * Obtiene el nombre aproximado de la ubicación usando Nominatim.
  * @param {number} lat - Latitud
@@ -414,7 +418,7 @@ async function fetchReverseGeocode(lat, lon) {
       headers: {
         "Accept-Language": "es"
       },
-      referrerPolicy: "no-referrer-when-downgrade"
+      referrerPolicy: "no-referrer"
     });
 
     if (!response.ok) {
@@ -422,12 +426,12 @@ async function fetchReverseGeocode(lat, lon) {
     }
 
     const payload = await response.json();
-    if (requestId !== reverseLookupRequestId) return;
+    if (isStaleReverseLookup(requestId)) return;
 
     const name = payload.display_name || "Ubicación no disponible";
     setAddressText(`Ubicación aproximada: ${name}`);
   } catch (error) {
-    if (requestId !== reverseLookupRequestId) return;
+    if (isStaleReverseLookup(requestId)) return;
     setAddressText("Ubicación aproximada: no disponible");
   }
 }
