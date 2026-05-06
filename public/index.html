@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PDA | Plataforma de Apoyo Agricola</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">PDA</p>
+        <h1>Plataforma de Apoyo Agricola</h1>
+      </div>
+      <p class="status-pill" id="connectionStatus">Listo</p>
+    </header>
+
+    <main class="app-shell">
+      <section class="input-panel" aria-labelledby="formTitle">
+        <div class="section-heading">
+          <p class="eyebrow">Datos del terreno</p>
+          <h2 id="formTitle">Recomendacion personalizada</h2>
+        </div>
+
+        <form id="recommendationForm">
+          <div class="location-row">
+            <button class="secondary-button" type="button" id="locationButton">
+              <span aria-hidden="true">⌖</span>
+              Usar ubicacion actual
+            </button>
+            <div class="coords" id="coordsText">Sin ubicacion</div>
+          </div>
+
+          <div class="form-grid">
+            <label>
+              Latitud
+              <input id="latitude" name="latitude" type="number" step="any" placeholder="19.4326" required>
+            </label>
+            <label>
+              Longitud
+              <input id="longitude" name="longitude" type="number" step="any" placeholder="-99.1332" required>
+            </label>
+            <label>
+              Tipo de suelo
+              <select id="soilType" name="soilType" required>
+                <option value="franco">Franco</option>
+                <option value="arenoso">Arenoso</option>
+                <option value="arcilloso">Arcilloso</option>
+                <option value="limoso">Limoso</option>
+              </select>
+            </label>
+            <label>
+              Fertilidad
+              <select id="fertilityLevel" name="fertilityLevel" required>
+                <option value="bueno">Bueno (Cf 0.9)</option>
+                <option value="medio">Medio (Cf 0.7)</option>
+                <option value="pobre">Pobre (Cf 0.5)</option>
+              </select>
+            </label>
+            <label class="wide">
+              Tamano del terreno en hectareas
+              <input id="landSizeHa" name="landSizeHa" type="number" min="0.01" step="0.01" value="1" required>
+            </label>
+          </div>
+
+          <button class="primary-button" type="submit">
+            Generar plan agricola
+          </button>
+        </form>
+      </section>
+
+      <section class="results-panel" aria-live="polite">
+        <div class="empty-state" id="emptyState">
+          <p class="eyebrow">Analisis</p>
+          <h2>Ingresa los datos y genera una recomendacion.</h2>
+          <p>La app consultara clima real, evaluara cultivos y calculara una produccion estimada.</p>
+        </div>
+
+        <div class="results hidden" id="results">
+          <section class="summary-band">
+            <div>
+              <p class="eyebrow">Cultivo recomendado</p>
+              <h2 id="cropName">-</h2>
+              <p id="cropMeta">-</p>
+            </div>
+            <div class="production-number">
+              <span id="productionTotal">0</span>
+              <small>ton estimadas</small>
+            </div>
+          </section>
+
+          <div class="dashboard-grid">
+            <article class="metric-card">
+              <p>Temperatura</p>
+              <strong id="temperature">-</strong>
+            </article>
+            <article class="metric-card">
+              <p>Humedad</p>
+              <strong id="humidity">-</strong>
+            </article>
+            <article class="metric-card">
+              <p>Lluvia</p>
+              <strong id="rainProbability">-</strong>
+            </article>
+            <article class="metric-card">
+              <p>Condicion</p>
+              <strong id="climateLabel">-</strong>
+            </article>
+          </div>
+
+          <section class="content-grid">
+            <article class="info-block">
+              <h3>Recomendaciones</h3>
+              <ul id="recommendations"></ul>
+            </article>
+
+            <article class="info-block">
+              <h3>Plan agricola</h3>
+              <dl class="plan-list">
+                <dt>Riego</dt>
+                <dd id="irrigationPlan">-</dd>
+                <dt>Fertilizacion</dt>
+                <dd>
+                  <ul id="fertilizationDates"></ul>
+                </dd>
+              </dl>
+            </article>
+
+            <article class="info-block">
+              <h3>Pronostico</h3>
+              <div class="forecast-list" id="forecastList"></div>
+            </article>
+
+            <article class="info-block">
+              <h3>Produccion</h3>
+              <dl class="calc-list">
+                <div>
+                  <dt>Rendimiento teorico</dt>
+                  <dd id="yieldValue">-</dd>
+                </div>
+                <div>
+                  <dt>Coeficiente clima (Cc)</dt>
+                  <dd id="ccValue">-</dd>
+                </div>
+                <div>
+                  <dt>Coeficiente suelo (Cf)</dt>
+                  <dd id="cfValue">-</dd>
+                </div>
+              </dl>
+            </article>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast hidden" id="toast" role="alert"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "pda-plataforma-apoyo-agricola",
+  "version": "1.0.0",
+  "description": "PDA (Plataforma de Apoyo Agricola): recomendaciones de cultivo y estimaciones de produccion para agricultores.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "keywords": [
+    "agricultura",
+    "cultivos",
+    "open-meteo",
+    "express",
+    "hackathon"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {}
+}
