@@ -37,10 +37,12 @@ PORT=3000
 OPEN_METEO_BASE_URL=https://api.open-meteo.com/v1/forecast
 PERENUAL_API_URL=https://perenual.com/api/v2
 PERENUAL_API_KEY=
+NOMINATIM_BASE_URL=https://nominatim.openstreetmap.org/reverse
+NOMINATIM_USER_AGENT=PDA/1.0 (https://github.com/byvidal/CODE-TEC)
 ```
 
 Open-Meteo no requiere API key para esta implementacion. Perenual requiere `PERENUAL_API_KEY`; si falla o no existe, se usa el catalogo local.
-La geocodificación inversa utiliza Nominatim (OpenStreetMap) sin API key.
+La geocodificación inversa utiliza Nominatim (OpenStreetMap) y permite configurar un `NOMINATIM_USER_AGENT` identificable.
 
 ## Estructura
 

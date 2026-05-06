@@ -20,8 +20,10 @@ let mapMarker = null;
 let mapAccuracyCircle = null;
 let reverseLookupTimer = null;
 let reverseLookupRequestId = 0;
+let manualInputTimer = null;
 const LOCATION_DEBOUNCE_MS = 700;
-const NOMINATIM_URL = "https://nominatim.openstreetmap.org/reverse";
+const MANUAL_INPUT_DEBOUNCE_MS = 500;
+const REVERSE_GEOCODE_ENDPOINT = "/api/geocode/reverse";
 const LOCATION_BUTTON_LABEL = "Usar ubicación actual";
 const LOCATION_BUTTON_LOADING_LABEL = "Localizando...";
 const GEOLOCATION_TIMEOUT_MS = 15000;
@@ -407,19 +409,11 @@ async function fetchReverseGeocode(lat, lon) {
   setAddressText("Ubicación aproximada: buscando...");
 
   try {
-    const url = new URL(NOMINATIM_URL);
-    url.searchParams.set("format", "jsonv2");
-    url.searchParams.set("lat", lat);
-    url.searchParams.set("lon", lon);
-    url.searchParams.set("zoom", "14");
-    url.searchParams.set("addressdetails", "1");
+    const url = new URL(REVERSE_GEOCODE_ENDPOINT, window.location.origin);
+    url.searchParams.set("latitude", lat);
+    url.searchParams.set("longitude", lon);
 
-    const response = await fetch(url, {
-      headers: {
-        "Accept-Language": "es"
-      },
-      referrerPolicy: "no-referrer"
-    });
+    const response = await fetch(url);
 
     if (!response.ok) {
       throw new Error("No se pudo obtener la ubicación.");
@@ -428,7 +422,7 @@ async function fetchReverseGeocode(lat, lon) {
     const payload = await response.json();
     if (isStaleReverseLookup(requestId)) return;
 
-    const name = payload.display_name || "Ubicación no disponible";
+    const name = payload.displayName || "Ubicación no disponible";
     setAddressText(`Ubicación aproximada: ${name}`);
   } catch (error) {
     if (isStaleReverseLookup(requestId)) return;
@@ -516,17 +510,30 @@ locationButton.addEventListener("click", () => {
  * Maneja la entrada manual de coordenadas desde los campos del formulario.
  */
 function handleManualCoordinateInput() {
-  const latitude = Number(fields.latitude.value);
-  const longitude = Number(fields.longitude.value);
+  if (manualInputTimer) {
+    window.clearTimeout(manualInputTimer);
+  }
 
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+  if (!fields.latitude.value || !fields.longitude.value) {
     setCoordsText(null, null);
     setAddressText("Ubicación aproximada: -");
     toggleMapOverlay(true);
     return;
   }
 
-  applyCoordinates(latitude, longitude, { updateFields: false });
+  manualInputTimer = window.setTimeout(() => {
+    const latitude = Number(fields.latitude.value);
+    const longitude = Number(fields.longitude.value);
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      setCoordsText(null, null);
+      setAddressText("Ubicación aproximada: -");
+      toggleMapOverlay(true);
+      return;
+    }
+
+    applyCoordinates(latitude, longitude, { updateFields: false });
+  }, MANUAL_INPUT_DEBOUNCE_MS);
 }
 
 // Actualizar mapa cuando el usuario modifica latitud o longitud
