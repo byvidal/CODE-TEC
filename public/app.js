@@ -24,6 +24,8 @@ const LOCATION_DEBOUNCE_MS = 700;
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/reverse";
 const LOCATION_BUTTON_LABEL = "Usar ubicación actual";
 const LOCATION_BUTTON_LOADING_LABEL = "Localizando...";
+const GEOLOCATION_TIMEOUT_MS = 15000;
+const GEOLOCATION_MAX_AGE_MS = 30000;
 
 const fields = {
   latitude: document.querySelector("#latitude"),
@@ -386,7 +388,7 @@ function scheduleReverseGeocode(lat, lon) {
   }
 
   reverseLookupTimer = window.setTimeout(() => {
-    void fetchReverseGeocode(lat, lon);
+    fetchReverseGeocode(lat, lon);
   }, LOCATION_DEBOUNCE_MS);
 }
 
@@ -490,17 +492,18 @@ locationButton.addEventListener("click", () => {
     (error) => {
       setStatus("Listo");
       setLocationButtonLoading(false);
-      const errorMessage = error?.code === 1
-        ? "Permiso denegado para la ubicación. Activa el GPS o ingresa coordenadas."
-        : error?.code === 2
-          ? "No se pudo determinar la ubicación. Intenta de nuevo."
-          : "Tiempo de espera agotado. Ingresa latitud y longitud manualmente.";
+      let errorMessage = "Tiempo de espera agotado. Ingresa latitud y longitud manualmente.";
+      if (error?.code === 1) {
+        errorMessage = "Permiso denegado para la ubicación. Activa el GPS o ingresa coordenadas.";
+      } else if (error?.code === 2) {
+        errorMessage = "No se pudo determinar la ubicación. Intenta de nuevo.";
+      }
       showToast(errorMessage);
     },
     {
       enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 30000
+      timeout: GEOLOCATION_TIMEOUT_MS,
+      maximumAge: GEOLOCATION_MAX_AGE_MS
     }
   );
 });
