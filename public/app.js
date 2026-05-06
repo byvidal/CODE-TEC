@@ -357,7 +357,7 @@ function updateMapLocation(lat, lon, accuracy = null) {
     });
   }
 
-  if (Number.isFinite(accuracy) && accuracy > 0) {
+  if (Number.isFinite(accuracy)) {
     if (mapAccuracyCircle) {
       mapAccuracyCircle.setLatLng([latNum, lonNum]);
       mapAccuracyCircle.setRadius(accuracy);
@@ -409,11 +409,16 @@ async function fetchReverseGeocode(lat, lon) {
   setAddressText("Ubicación aproximada: buscando...");
 
   try {
-    const url = new URL(REVERSE_GEOCODE_ENDPOINT, window.location.origin);
-    url.searchParams.set("latitude", lat);
-    url.searchParams.set("longitude", lon);
-
-    const response = await fetch(url);
+    const response = await fetch(REVERSE_GEOCODE_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        latitude: lat,
+        longitude: lon
+      })
+    });
 
     if (!response.ok) {
       throw new Error("No se pudo obtener la ubicación.");
@@ -490,11 +495,13 @@ locationButton.addEventListener("click", () => {
     (error) => {
       setStatus("Listo");
       setLocationButtonLoading(false);
-      let errorMessage = "Tiempo de espera agotado. Ingresa latitud y longitud manualmente.";
+      let errorMessage = "No se pudo obtener la ubicación. Intenta de nuevo.";
       if (error?.code === 1) {
         errorMessage = "Permiso denegado para la ubicación. Activa el GPS o ingresa coordenadas.";
       } else if (error?.code === 2) {
         errorMessage = "No se pudo determinar la ubicación. Intenta de nuevo.";
+      } else if (error?.code === 3) {
+        errorMessage = "Tiempo de espera agotado. Ingresa latitud y longitud manualmente.";
       }
       showToast(errorMessage);
     },

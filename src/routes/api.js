@@ -27,9 +27,9 @@ router.get("/crops", async (_request, response) => {
   response.json(result);
 });
 
-router.get("/geocode/reverse", async (request, response, next) => {
+router.post("/geocode/reverse", async (request, response, next) => {
   try {
-    const { latitude, longitude } = request.query;
+    const { latitude, longitude } = request.body;
 
     if (!latitude || !longitude) {
       return response.status(400).json({

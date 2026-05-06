@@ -48,7 +48,7 @@ async function reverseGeocode(latitudeInput, longitudeInput) {
   });
 
   if (!response.ok) {
-    const error = new Error(`Nominatim respondio con estado ${response.status}.`);
+    const error = new Error(`Nominatim respondió con estado ${response.status}.`);
     error.statusCode = response.status;
     throw error;
   }
