@@ -7,10 +7,11 @@ Aplicacion web de hackaton para agricultores. Genera recomendaciones de cultivo,
 - Geolocalizacion desde el navegador.
 - Clima actual y pronostico basico con Open-Meteo.
 - Seleccion manual de tipo y fertilidad de suelo.
-- Integracion opcional con API de cultivos FgFarm mediante variables de entorno.
+- Integracion opcional con API de plantas Perenual mediante variables de entorno.
 - Catalogo local de cultivos como respaldo.
 - Reglas de recomendaciones agricolas.
 - Plan automatico de riego, fertilizacion y cuidados.
+- Generacion de PDF con clima, cultivo, plan, recomendaciones y estimacion.
 - Calculo de produccion:
 
 ```text
@@ -33,11 +34,11 @@ Copia `.env.example` a `.env` y ajusta:
 ```bash
 PORT=3000
 OPEN_METEO_BASE_URL=https://api.open-meteo.com/v1/forecast
-FGFARM_API_URL=
-FGFARM_API_KEY=
+PERENUAL_API_URL=https://perenual.com/api/v2
+PERENUAL_API_KEY=
 ```
 
-Open-Meteo no requiere API key para esta implementacion. `FGFARM_API_URL` y `FGFARM_API_KEY` son opcionales; si fallan o no existen, se usa el catalogo local.
+Open-Meteo no requiere API key para esta implementacion. Perenual requiere `PERENUAL_API_KEY`; si falla o no existe, se usa el catalogo local.
 
 ## Estructura
 

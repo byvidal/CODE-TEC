@@ -1,5 +1,12 @@
 const { getSoilCoefficient } = require("../utils/soil");
 
+/**
+ * Calcula un puntaje de compatibilidad entre un cultivo y las condiciones actuales
+ * @param {object} crop - Datos del cultivo
+ * @param {object} weather - Datos climáticos actuales
+ * @param {string} soilType - Tipo de suelo
+ * @returns {number} Puntuación de 0-100
+ */
 function scoreCrop(crop, weather, soilType) {
   const { temperature, humidity } = weather.current;
   const optimal = crop.optimalConditions;
@@ -36,6 +43,12 @@ function scoreCrop(crop, weather, soilType) {
   return Math.round(score);
 }
 
+/**
+ * Clasifica el clima actual del lugar como ideal, medio o adverso
+ * @param {object} crop - Datos del cultivo
+ * @param {object} weather - Datos climáticos actuales
+ * @returns {{label: string, coefficient: number}} Clasificación y coeficiente
+ */
 function classifyClimate(crop, weather) {
   const { temperature, humidity, rainProbability } = weather.current;
   const optimal = crop.optimalConditions;
@@ -68,6 +81,12 @@ function classifyClimate(crop, weather) {
   };
 }
 
+/**
+ * Genera recomendaciones personalizadas basadas en condiciones climáticas
+ * @param {object} crop - Datos del cultivo
+ * @param {object} weather - Datos climáticos actuales
+ * @returns {string[]} Array de recomendaciones
+ */
 function buildRecommendations(crop, weather) {
   const recommendations = [];
   const { temperature, humidity, rainProbability } = weather.current;
@@ -108,6 +127,12 @@ function addDays(date, days) {
   return result.toISOString().slice(0, 10);
 }
 
+/**
+ * Genera un plan agrícola con fechas de riego, fertilización y cuidados
+ * @param {object} crop - Datos del cultivo
+ * @param {object} weather - Datos climáticos actuales
+ * @returns {object} Plan agrícola con detalles de manejo
+ */
 function buildAgriculturalPlan(crop, weather) {
   const today = new Date();
   const shouldAvoidIrrigation = weather.current.rainProbability > 60;
@@ -142,6 +167,18 @@ function estimateProduction(landSizeHa, crop, climateCoefficient, soilCoefficien
     throw new Error("El tamano del terreno debe ser mayor a 0 hectareas.");
   }
 
+  if (!Number.isFinite(crop.theoreticalYieldTonHa) || crop.theoreticalYieldTonHa <= 0) {
+    throw new Error("Rendimiento teorico invalido del cultivo.");
+  }
+
+  if (!Number.isFinite(climateCoefficient) || climateCoefficient <= 0 || climateCoefficient > 1) {
+    throw new Error("Coeficiente de clima invalido.");
+  }
+
+  if (!Number.isFinite(soilCoefficient) || soilCoefficient <= 0 || soilCoefficient > 1) {
+    throw new Error("Coeficiente de suelo invalido.");
+  }
+
   const total = landSize * (crop.theoreticalYieldTonHa * climateCoefficient * soilCoefficient);
 
   return {
@@ -153,6 +190,17 @@ function estimateProduction(landSizeHa, crop, climateCoefficient, soilCoefficien
   };
 }
 
+/**
+ * Genera una recomendación agrícola completa basada en todos los parámetros
+ * @param {object} params - Parámetros de entrada
+ * @param {array} params.crops - Lista de cultivos disponibles
+ * @param {object} params.weather - Datos climáticos actuales
+ * @param {string} params.soilType - Tipo de suelo
+ * @param {string} params.fertilityLevel - Nivel de fertilidad
+ * @param {number} params.landSizeHa - Tamaño del terreno en hectáreas
+ * @returns {object} Recomendación completa con cultivo, plan y producción estimada
+ * @throws {Error} Si los parámetros no son válidos
+ */
 function generateRecommendation({ crops, weather, soilType, fertilityLevel, landSizeHa }) {
   const soil = getSoilCoefficient(soilType, fertilityLevel);
 
@@ -187,6 +235,81 @@ function generateRecommendation({ crops, weather, soilType, fertilityLevel, land
   };
 }
 
+/**
+ * Analiza un cultivo específico en condiciones locales
+ * @param {object} params - Parámetros de entrada
+ * @param {object} params.crop - Cultivo a analizar
+ * @param {object} params.weather - Datos climáticos
+ * @param {string} params.soilType - Tipo de suelo
+ * @param {string} params.fertilityLevel - Nivel de fertilidad
+ * @returns {object} Análisis detallado del cultivo con clima y cuidados
+ */
+function analyzeCropConditions({ crop, weather, soilType, fertilityLevel }) {
+  const soil = getSoilCoefficient(soilType, fertilityLevel);
+  
+  if (!soil) {
+    throw new Error("Tipo o fertilidad de suelo no validos.");
+  }
+
+  const climate = classifyClimate(crop, weather);
+  const score = scoreCrop(crop, weather, soilType);
+  const recommendations = buildRecommendations(crop, weather);
+  const plan = buildAgriculturalPlan(crop, weather);
+
+  return {
+    crop,
+    climate,
+    soil,
+    score,
+    recommendations,
+    plan,
+    analysis: {
+      temperatureStatus: classifyTemperature(crop, weather),
+      humidityStatus: classifyHumidity(crop, weather),
+      rainStatus: classifyRain(weather)
+    }
+  };
+}
+
+function classifyTemperature(crop, weather) {
+  const temp = weather.current.temperature;
+  const { temperatureMin, temperatureMax } = crop.optimalConditions;
+  
+  if (temp >= temperatureMin && temp <= temperatureMax) {
+    return { status: "ideal", message: `Temperatura ideal: ${temp}°C está en rango ${temperatureMin}-${temperatureMax}°C` };
+  } else if (temp < temperatureMin) {
+    return { status: "baja", message: `Temperatura muy baja: ${temp}°C (mínimo recomendado: ${temperatureMin}°C)` };
+  } else {
+    return { status: "alta", message: `Temperatura muy alta: ${temp}°C (máximo recomendado: ${temperatureMax}°C)` };
+  }
+}
+
+function classifyHumidity(crop, weather) {
+  const humidity = weather.current.humidity;
+  const { humidityMin, humidityMax } = crop.optimalConditions;
+  
+  if (humidity >= humidityMin && humidity <= humidityMax) {
+    return { status: "ideal", message: `Humedad ideal: ${humidity}% está en rango ${humidityMin}-${humidityMax}%` };
+  } else if (humidity < humidityMin) {
+    return { status: "baja", message: `Humedad baja: ${humidity}% (mínimo recomendado: ${humidityMin}%)` };
+  } else {
+    return { status: "alta", message: `Humedad alta: ${humidity}% (máximo recomendado: ${humidityMax}%)` };
+  }
+}
+
+function classifyRain(weather) {
+  const rainProb = weather.current.rainProbability;
+  
+  if (rainProb <= 30) {
+    return { status: "bajo", message: `Probabilidad de lluvia baja: ${rainProb}%` };
+  } else if (rainProb <= 70) {
+    return { status: "medio", message: `Probabilidad de lluvia moderada: ${rainProb}%` };
+  } else {
+    return { status: "alto", message: `Probabilidad de lluvia alta: ${rainProb}%` };
+  }
+}
+
 module.exports = {
-  generateRecommendation
+  generateRecommendation,
+  analyzeCropConditions
 };

@@ -25,7 +25,9 @@ app.use((request, response, next) => {
 });
 
 app.use((error, _request, response, _next) => {
-  response.status(400).json({
+  console.error("Error:", error.message);
+  const statusCode = error.statusCode || 400;
+  response.status(statusCode).json({
     error: error.message || "Ocurrio un error inesperado."
   });
 });

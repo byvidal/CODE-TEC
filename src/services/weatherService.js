@@ -1,5 +1,12 @@
 const BASE_URL = process.env.OPEN_METEO_BASE_URL || "https://api.open-meteo.com/v1/forecast";
 
+/**
+ * Valida y convierte coordenadas geográficas
+ * @param {number|string} latitude - Latitud (-90 a 90)
+ * @param {number|string} longitude - Longitud (-180 a 180)
+ * @returns {{latitude: number, longitude: number}} Coordenadas validadas
+ * @throws {Error} Si las coordenadas son inválidas
+ */
 function assertCoordinates(latitude, longitude) {
   const lat = Number(latitude);
   const lon = Number(longitude);
@@ -15,6 +22,11 @@ function assertCoordinates(latitude, longitude) {
   return { latitude: lat, longitude: lon };
 }
 
+/**
+ * Calcula el promedio de valores válidos
+ * @param {number[]} values - Array de valores numéricos
+ * @returns {number} Promedio de valores válidos (0 si no hay valores)
+ */
 function average(values) {
   const validValues = values.filter((value) => Number.isFinite(value));
   if (!validValues.length) return 0;
@@ -34,8 +46,43 @@ function summarizeForecast(daily) {
   }));
 }
 
+/**
+ * Obtiene el clima actual y pronóstico de 5 días usando Open-Meteo
+ * @param {number|string} latitudeInput - Latitud del lugar
+ * @param {number|string} longitudeInput - Longitud del lugar
+ * @returns {Promise<{source: string, latitude: number, longitude: number, timezone: string, current: object, forecast: array}>} Datos climáticos
+ * @throws {Error} Si la API no responde correctamente después de reintentos
+ */
 async function getWeather(latitudeInput, longitudeInput) {
   const { latitude, longitude } = assertCoordinates(latitudeInput, longitudeInput);
+  
+  const maxRetries = 3;
+  let lastError;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fetchWeatherData(latitude, longitude);
+    } catch (error) {
+      lastError = error;
+      
+      // Si es error 502 o 429, reintentar con espera exponencial
+      if (error.statusCode === 502 || error.statusCode === 429) {
+        if (attempt < maxRetries - 1) {
+          const waitTime = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+          console.warn(`Open-Meteo respondio con ${error.statusCode}. Reintentando en ${waitTime}ms...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+      }
+      
+      throw error;
+    }
+  }
+
+  throw lastError || new Error("Error obteniendo datos de Open-Meteo");
+}
+
+async function fetchWeatherData(latitude, longitude) {
   const params = new URLSearchParams({
     latitude,
     longitude,
@@ -49,13 +96,16 @@ async function getWeather(latitudeInput, longitudeInput) {
   const response = await fetch(`${BASE_URL}?${params}`);
 
   if (!response.ok) {
-    throw new Error(`Open-Meteo respondio con estado ${response.status}.`);
+    const error = new Error(`Open-Meteo respondio con estado ${response.status}.`);
+    error.statusCode = response.status;
+    throw error;
   }
 
   const payload = await response.json();
   const nextRainProbabilities = payload.hourly?.precipitation_probability?.slice(0, 12) || [];
   const nextHumidity = payload.hourly?.relative_humidity_2m?.slice(0, 12) || [];
-  const rainProbability = Math.round(Math.max(...nextRainProbabilities.filter(Number.isFinite), 0));
+  const validRainProbs = nextRainProbabilities.filter(Number.isFinite);
+  const rainProbability = Math.round(Math.max(...validRainProbs, 0));
   const humidity = payload.current?.relative_humidity_2m ?? Math.round(average(nextHumidity));
 
   return {

@@ -37,6 +37,12 @@ const soilProfiles = {
   }
 };
 
+/**
+ * Obtiene el coeficiente de fertilidad para un tipo de suelo
+ * @param {string} soilType - Tipo de suelo (arenoso, arcilloso, limoso, franco)
+ * @param {string} fertilityLevel - Nivel de fertilidad (pobre, medio, bueno)
+ * @returns {object|null} Datos del coeficiente o null si son inválidos
+ */
 function getSoilCoefficient(soilType, fertilityLevel) {
   const profile = soilProfiles[soilType];
 

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PDA | Plataforma de Apoyo Agricola</title>
     <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   </head>
   <body>
     <header class="topbar">
@@ -18,17 +19,24 @@
     <main class="app-shell">
       <section class="input-panel" aria-labelledby="formTitle">
         <div class="section-heading">
-          <p class="eyebrow">Datos del terreno</p>
-          <h2 id="formTitle">Recomendacion personalizada</h2>
+          <p class="eyebrow">Plan Agricola Personalizado</p>
+          <h2 id="formTitle">Genera tu recomendacion</h2>
         </div>
 
-        <form id="recommendationForm">
+        <form id="mainForm">
           <div class="location-row">
             <button class="secondary-button" type="button" id="locationButton">
-              <span aria-hidden="true">⌖</span>
+              <span aria-hidden="true">GPS</span>
               Usar ubicacion actual
             </button>
             <div class="coords" id="coordsText">Sin ubicacion</div>
+          </div>
+
+          <div id="mapContainer" style="width: 100%; height: 250px; border-radius: 8px; overflow: hidden; border: 1px solid #c9d4ca; margin-bottom: 16px; background-color: #f0f2ef;">
+            <div id="miniMap" style="width: 100%; height: 100%; display: none;" aria-label="Mapa con tu ubicacion seleccionada"></div>
+            <div id="mapPlaceholder" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--muted); text-align: center; padding: 20px; box-sizing: border-box;">
+              <p>Ingresa coordenadas o usa GPS para ver el mapa</p>
+            </div>
           </div>
 
           <div class="form-grid">
@@ -61,10 +69,46 @@
               Tamano del terreno en hectareas
               <input id="landSizeHa" name="landSizeHa" type="number" min="0.01" step="0.01" value="1" required>
             </label>
+            <label class="wide">
+              Cultivo - Busca o selecciona
+              <div style="position: relative;">
+                <input 
+                  id="cropSearchInput" 
+                  type="text" 
+                  placeholder="Busca: maiz, jitomate, frijol..." 
+                  style="width: 100%; min-height: 44px; border: 1px solid #c9d4ca; border-radius: 6px; padding: 10px 12px; font-family: inherit;"
+                  autocomplete="off"
+                >
+                <div 
+                  id="cropDropdown" 
+                  style="
+                    display: none;
+                    position: absolute;
+                    top: 100%;
+                    left: 0;
+                    right: 0;
+                    background: white;
+                    border: 1px solid #c9d4ca;
+                    border-top: none;
+                    border-radius: 0 0 6px 6px;
+                    max-height: 200px;
+                    overflow-y: auto;
+                    z-index: 1000;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                  "
+                ></div>
+              </div>
+              <small style="color: var(--muted); margin-top: 4px; display: block;">Escribe para buscar o ver sugerencias</small>
+              <input id="selectedCropId" type="hidden" name="selectedCropId" value="">
+              <input id="selectedCropName" type="hidden" name="selectedCropName" value="">
+            </label>
           </div>
 
           <button class="primary-button" type="submit">
             Generar plan agricola
+          </button>
+          <button class="secondary-button hidden" type="button" id="pdfButton">
+            Descargar PDF
           </button>
         </form>
       </section>
@@ -154,6 +198,7 @@
     </main>
 
     <div class="toast hidden" id="toast" role="alert"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>
