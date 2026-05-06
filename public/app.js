@@ -22,7 +22,7 @@ let reverseLookupTimer = null;
 let reverseLookupRequestId = 0;
 const LOCATION_DEBOUNCE_MS = 700;
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/reverse";
-const LOCATION_BUTTON_LABEL = "Usar ubicacion actual";
+const LOCATION_BUTTON_LABEL = "Usar ubicación actual";
 const LOCATION_BUTTON_LOADING_LABEL = "Localizando...";
 
 const fields = {
@@ -70,7 +70,7 @@ function setLocationButtonLoading(isLoading) {
 
 function setCoordsText(latitude, longitude, accuracy) {
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    coordsText.textContent = "Sin ubicacion";
+    coordsText.textContent = "Sin ubicación";
     return;
   }
 
@@ -127,7 +127,7 @@ function renderForecast(forecast) {
   container.innerHTML = "";
 
   if (!forecast?.length) {
-    container.innerHTML = "<p class='muted'>Pronostico no disponible.</p>";
+    container.innerHTML = "<p class='muted'>Pronóstico no disponible.</p>";
     return;
   }
 
@@ -343,7 +343,7 @@ function updateMapLocation(lat, lon, accuracy = null) {
     mapMarker.setLatLng([latNum, lonNum]);
   } else {
     mapMarker = L.marker([latNum, lonNum], {
-      title: "Tu ubicacion",
+      title: "Tu ubicación",
       draggable: true
     }).addTo(map);
 
@@ -371,6 +371,11 @@ function updateMapLocation(lat, lon, accuracy = null) {
   }
 }
 
+/**
+ * Programa una consulta de geocodificación inversa con debounce.
+ * @param {number} lat - Latitud válida
+ * @param {number} lon - Longitud válida
+ */
 function scheduleReverseGeocode(lat, lon) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
     return;
@@ -385,9 +390,15 @@ function scheduleReverseGeocode(lat, lon) {
   }, LOCATION_DEBOUNCE_MS);
 }
 
+/**
+ * Obtiene el nombre aproximado de la ubicación usando Nominatim.
+ * @param {number} lat - Latitud
+ * @param {number} lon - Longitud
+ * @returns {Promise<void>} Actualiza el texto de ubicación en la interfaz
+ */
 async function fetchReverseGeocode(lat, lon) {
   const requestId = ++reverseLookupRequestId;
-  setAddressText("Ubicacion aproximada: buscando...");
+  setAddressText("Ubicación aproximada: buscando...");
 
   try {
     const url = new URL(NOMINATIM_URL);
@@ -405,20 +416,29 @@ async function fetchReverseGeocode(lat, lon) {
     });
 
     if (!response.ok) {
-      throw new Error("No se pudo obtener la ubicacion.");
+      throw new Error("No se pudo obtener la ubicación.");
     }
 
     const payload = await response.json();
     if (requestId !== reverseLookupRequestId) return;
 
-    const name = payload.display_name || "Ubicacion no disponible";
-    setAddressText(`Ubicacion aproximada: ${name}`);
+    const name = payload.display_name || "Ubicación no disponible";
+    setAddressText(`Ubicación aproximada: ${name}`);
   } catch (error) {
     if (requestId !== reverseLookupRequestId) return;
-    setAddressText("Ubicacion aproximada: no disponible");
+    setAddressText("Ubicación aproximada: no disponible");
   }
 }
 
+/**
+ * Aplica coordenadas válidas a la UI, mapa y geocodificación inversa.
+ * @param {number|string} lat - Latitud
+ * @param {number|string} lon - Longitud
+ * @param {object} [options] - Opciones de actualización
+ * @param {boolean} [options.updateFields=true] - Actualiza inputs de lat/lon
+ * @param {number|null} [options.accuracy] - Precisión en metros
+ * @param {boolean} [options.showToast] - Muestra notificación al usuario
+ */
 function applyCoordinates(lat, lon, options = {}) {
   const latitude = Number(lat);
   const longitude = Number(lon);
@@ -426,7 +446,7 @@ function applyCoordinates(lat, lon, options = {}) {
 
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     setCoordsText(null, null);
-    setAddressText("Ubicacion aproximada: -");
+    setAddressText("Ubicación aproximada: -");
     return;
   }
 
@@ -445,13 +465,13 @@ function applyCoordinates(lat, lon, options = {}) {
   scheduleReverseGeocode(latitude, longitude);
 
   if (options.showToast) {
-    showToast("Ubicacion actualizada en el mapa.");
+    showToast("Ubicación actualizada en el mapa.");
   }
 }
 
 locationButton.addEventListener("click", () => {
   if (!navigator.geolocation) {
-    showToast("Tu navegador no soporta geolocalizacion.");
+    showToast("Tu navegador no soporta geolocalización.");
     return;
   }
 
@@ -464,16 +484,16 @@ locationButton.addEventListener("click", () => {
         accuracy: position.coords.accuracy,
         showToast: true
       });
-      setStatus("Ubicacion obtenida");
+      setStatus("Ubicación obtenida");
       setLocationButtonLoading(false);
     },
     (error) => {
       setStatus("Listo");
       setLocationButtonLoading(false);
       const errorMessage = error?.code === 1
-        ? "Permiso denegado para la ubicacion. Activa el GPS o ingresa coordenadas."
+        ? "Permiso denegado para la ubicación. Activa el GPS o ingresa coordenadas."
         : error?.code === 2
-          ? "No se pudo determinar la ubicacion. Intenta de nuevo."
+          ? "No se pudo determinar la ubicación. Intenta de nuevo."
           : "Tiempo de espera agotado. Ingresa latitud y longitud manualmente.";
       showToast(errorMessage);
     },
@@ -485,13 +505,16 @@ locationButton.addEventListener("click", () => {
   );
 });
 
+/**
+ * Maneja la entrada manual de coordenadas desde los campos del formulario.
+ */
 function handleManualCoordinateInput() {
   const latitude = Number(fields.latitude.value);
   const longitude = Number(fields.longitude.value);
 
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     setCoordsText(null, null);
-    setAddressText("Ubicacion aproximada: -");
+    setAddressText("Ubicación aproximada: -");
     toggleMapOverlay(true);
     return;
   }
@@ -788,7 +811,7 @@ function renderCropAnalysis(data) {
   const forecastContainer = document.querySelector("#analysisForecast");
   forecastContainer.innerHTML = "";
   if (!data.weather.forecast?.length) {
-    forecastContainer.innerHTML = "<p class='muted'>Pronostico no disponible.</p>";
+    forecastContainer.innerHTML = "<p class='muted'>Pronóstico no disponible.</p>";
   } else {
     data.weather.forecast.forEach((day) => {
       const row = document.createElement("div");
