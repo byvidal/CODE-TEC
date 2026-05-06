@@ -24,18 +24,21 @@
         </div>
 
         <form id="mainForm">
-          <div class="location-row">
-            <button class="secondary-button" type="button" id="locationButton">
-              <span aria-hidden="true">GPS</span>
-              Usar ubicacion actual
-            </button>
-            <div class="coords" id="coordsText">Sin ubicacion</div>
-          </div>
-
-          <div id="mapContainer" style="width: 100%; height: 250px; border-radius: 8px; overflow: hidden; border: 1px solid #c9d4ca; margin-bottom: 16px; background-color: #f0f2ef;">
-            <div id="miniMap" style="width: 100%; height: 100%; display: none;" aria-label="Mapa con tu ubicacion seleccionada"></div>
-            <div id="mapPlaceholder" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--muted); text-align: center; padding: 20px; box-sizing: border-box;">
-              <p>Ingresa coordenadas o usa GPS para ver el mapa</p>
+          <div class="location-card">
+            <div class="location-row">
+              <button class="secondary-button" type="button" id="locationButton">
+                <span aria-hidden="true">GPS</span>
+                Usar ubicacion actual
+              </button>
+              <div class="coords" id="coordsText">Sin ubicacion</div>
+            </div>
+            <p class="location-hint">Puedes hacer clic en el mapa o arrastrar el marcador para ajustar la ubicacion.</p>
+            <div class="address" id="addressText">Ubicacion aproximada: -</div>
+            <div id="mapContainer" class="map-shell" aria-label="Mapa de ubicacion">
+              <div id="miniMap" class="map-canvas" aria-label="Mapa con tu ubicacion seleccionada"></div>
+              <div class="map-overlay" id="mapOverlay">
+                <p>Haz clic en el mapa o usa GPS para seleccionar tu parcela.</p>
+              </div>
             </div>
           </div>
 
