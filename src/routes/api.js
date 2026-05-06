@@ -1,6 +1,7 @@
 const express = require("express");
 const { getWeather } = require("../services/weatherService");
 const { getCrops } = require("../services/cropService");
+const { reverseGeocode } = require("../services/locationService");
 const { generateRecommendation, analyzeCropConditions } = require("../services/recommendationService");
 const { createAgriculturalReportPdf } = require("../services/pdfService");
 const { soilProfiles } = require("../utils/soil");
@@ -24,6 +25,23 @@ router.get("/soil-types", (_request, response) => {
 router.get("/crops", async (_request, response) => {
   const result = await getCrops();
   response.json(result);
+});
+
+router.post("/geocode/reverse", async (request, response, next) => {
+  try {
+    const { latitude, longitude } = request.body;
+
+    if (!latitude || !longitude) {
+      return response.status(400).json({
+        error: "Latitud y longitud son obligatorias."
+      });
+    }
+
+    const location = await reverseGeocode(latitude, longitude);
+    response.json(location);
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.post("/crop-care", async (request, response, next) => {

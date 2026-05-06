@@ -5,9 +5,10 @@ Aplicacion web de hackaton para agricultores. Genera recomendaciones de cultivo,
 ## Funcionalidades
 
 - Geolocalizacion desde el navegador.
+- Selección de ubicación en mapa con geocodificación inversa (Nominatim/OpenStreetMap).
 - Clima actual y pronostico basico con Open-Meteo.
-- Seleccion manual de tipo y fertilidad de suelo.
-- Integracion opcional con API de plantas Perenual mediante variables de entorno.
+- Selección manual de tipo y fertilidad de suelo.
+- Integración opcional con API de plantas Perenual mediante variables de entorno.
 - Catalogo local de cultivos como respaldo.
 - Reglas de recomendaciones agricolas.
 - Plan automatico de riego, fertilizacion y cuidados.
@@ -36,9 +37,12 @@ PORT=3000
 OPEN_METEO_BASE_URL=https://api.open-meteo.com/v1/forecast
 PERENUAL_API_URL=https://perenual.com/api/v2
 PERENUAL_API_KEY=
+NOMINATIM_BASE_URL=https://nominatim.openstreetmap.org/reverse
+NOMINATIM_USER_AGENT=PDA/1.0 (https://github.com/byvidal/CODE-TEC)
 ```
 
 Open-Meteo no requiere API key para esta implementacion. Perenual requiere `PERENUAL_API_KEY`; si falla o no existe, se usa el catalogo local.
+La geocodificación inversa utiliza Nominatim (OpenStreetMap) y permite configurar un `NOMINATIM_USER_AGENT` identificable.
 
 ## Estructura
 

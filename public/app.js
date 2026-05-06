@@ -11,11 +11,23 @@ const selectedCropId = document.querySelector("#selectedCropId");
 const selectedCropName = document.querySelector("#selectedCropName");
 const pdfButton = document.querySelector("#pdfButton");
 const miniMapDiv = document.querySelector("#miniMap");
-const mapPlaceholder = document.querySelector("#mapPlaceholder");
+const mapOverlay = document.querySelector("#mapOverlay");
+const addressText = document.querySelector("#addressText");
 let allCrops = [];
 let lastReportRequest = null;
 let map = null;
 let mapMarker = null;
+let mapAccuracyCircle = null;
+let reverseLookupTimer = null;
+let reverseLookupRequestId = 0;
+let manualInputTimer = null;
+const LOCATION_DEBOUNCE_MS = 700;
+const MANUAL_INPUT_DEBOUNCE_MS = 500;
+const REVERSE_GEOCODE_ENDPOINT = "/api/geocode/reverse";
+const LOCATION_BUTTON_LABEL = "Usar ubicación actual";
+const LOCATION_BUTTON_LOADING_LABEL = "Localizando...";
+const GEOLOCATION_TIMEOUT_MS = 15000;
+const GEOLOCATION_MAX_AGE_MS = 30000;
 
 const fields = {
   latitude: document.querySelector("#latitude"),
@@ -52,6 +64,30 @@ function setLoading(isLoading) {
   submitButton.disabled = isLoading;
   submitButton.textContent = isLoading ? "Analizando..." : "Generar plan agricola";
   setStatus(isLoading ? "Consultando" : "Listo");
+}
+
+function setLocationButtonLoading(isLoading) {
+  locationButton.disabled = isLoading;
+  const label = isLoading ? LOCATION_BUTTON_LOADING_LABEL : LOCATION_BUTTON_LABEL;
+  locationButton.innerHTML = `<span aria-hidden="true">GPS</span> ${label}`;
+}
+
+function setCoordsText(latitude, longitude, accuracy) {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    coordsText.textContent = "Sin ubicación";
+    return;
+  }
+
+  const accuracyText = Number.isFinite(accuracy) ? ` (±${Math.round(accuracy)} m)` : "";
+  coordsText.textContent = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}${accuracyText}`;
+}
+
+function setAddressText(message) {
+  addressText.textContent = message;
+}
+
+function toggleMapOverlay(isVisible) {
+  mapOverlay.classList.toggle("hidden", !isVisible);
 }
 
 /**
@@ -93,6 +129,11 @@ function fillList(elementId, items) {
 function renderForecast(forecast) {
   const container = document.querySelector("#forecastList");
   container.innerHTML = "";
+
+  if (!forecast?.length) {
+    container.innerHTML = "<p class='muted'>Pronóstico no disponible.</p>";
+    return;
+  }
 
   forecast.forEach((day) => {
     const row = document.createElement("div");
@@ -274,75 +315,237 @@ function initializeMap() {
     attribution: '© OpenStreetMap contributors',
     maxZoom: 19
   }).addTo(map);
-  
-  miniMapDiv.style.display = "block";
-  mapPlaceholder.style.display = "none";
+
+  map.on("click", (event) => {
+    const { lat, lng } = event.latlng;
+    applyCoordinates(lat, lng, { source: "map" });
+  });
+
+  toggleMapOverlay(true);
 }
 
 /**
  * Actualiza el mapa con las coordenadas actuales
  */
-function updateMapLocation(lat, lon) {
-  if (map === null || !lat || !lon) return;
-  
-  const latNum = parseFloat(lat);
-  const lonNum = parseFloat(lon);
-  
-  // Validar coordenadas
-  if (isNaN(latNum) || isNaN(lonNum) || latNum < -90 || latNum > 90 || lonNum < -180 || lonNum > 180) {
+function updateMapLocation(lat, lon, accuracy = null) {
+  if (map === null) return;
+
+  const latNum = Number(lat);
+  const lonNum = Number(lon);
+
+  if (!Number.isFinite(latNum) || !Number.isFinite(lonNum)) {
     return;
   }
-  
-  // Centrar mapa en las coordenadas
-  map.setView([latNum, lonNum], 13);
-  
-  // Agregar o actualizar marcador
+
+  if (latNum < -90 || latNum > 90 || lonNum < -180 || lonNum > 180) {
+    return;
+  }
+
+  map.setView([latNum, lonNum], 13, { animate: true });
+
   if (mapMarker) {
     mapMarker.setLatLng([latNum, lonNum]);
   } else {
     mapMarker = L.marker([latNum, lonNum], {
-      title: "Tu ubicacion"
+      title: "Tu ubicación",
+      draggable: true
     }).addTo(map);
+
+    mapMarker.on("dragend", (event) => {
+      const { lat, lng } = event.target.getLatLng();
+      applyCoordinates(lat, lng, { source: "marker" });
+    });
+  }
+
+  if (Number.isFinite(accuracy)) {
+    if (mapAccuracyCircle) {
+      mapAccuracyCircle.setLatLng([latNum, lonNum]);
+      mapAccuracyCircle.setRadius(accuracy);
+    } else {
+      mapAccuracyCircle = L.circle([latNum, lonNum], {
+        radius: accuracy,
+        color: "#256a8a",
+        fillColor: "#256a8a",
+        fillOpacity: 0.15
+      }).addTo(map);
+    }
+  } else if (mapAccuracyCircle) {
+    map.removeLayer(mapAccuracyCircle);
+    mapAccuracyCircle = null;
+  }
+}
+
+/**
+ * Programa una consulta de geocodificación inversa con debounce.
+ * @param {number} lat - Latitud válida
+ * @param {number} lon - Longitud válida
+ */
+function scheduleReverseGeocode(lat, lon) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return;
+  }
+
+  if (reverseLookupTimer) {
+    window.clearTimeout(reverseLookupTimer);
+  }
+
+  reverseLookupTimer = window.setTimeout(() => {
+    fetchReverseGeocode(lat, lon);
+  }, LOCATION_DEBOUNCE_MS);
+}
+
+function isStaleReverseLookup(requestId) {
+  return requestId !== reverseLookupRequestId;
+}
+
+/**
+ * Obtiene el nombre aproximado de la ubicación usando Nominatim.
+ * @param {number} lat - Latitud
+ * @param {number} lon - Longitud
+ * @returns {Promise<void>} Actualiza el texto de ubicación en la interfaz
+ */
+async function fetchReverseGeocode(lat, lon) {
+  const requestId = ++reverseLookupRequestId;
+  setAddressText("Ubicación aproximada: buscando...");
+
+  try {
+    const response = await fetch(REVERSE_GEOCODE_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        latitude: lat,
+        longitude: lon
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error("No se pudo obtener la ubicación.");
+    }
+
+    const payload = await response.json();
+    if (isStaleReverseLookup(requestId)) return;
+
+    const name = payload.displayName || "Ubicación no disponible";
+    setAddressText(`Ubicación aproximada: ${name}`);
+  } catch (error) {
+    if (isStaleReverseLookup(requestId)) return;
+    setAddressText("Ubicación aproximada: no disponible");
+  }
+}
+
+/**
+ * Aplica coordenadas válidas a la UI, mapa y geocodificación inversa.
+ * @param {number|string} lat - Latitud
+ * @param {number|string} lon - Longitud
+ * @param {object} [options] - Opciones de actualización
+ * @param {boolean} [options.updateFields=true] - Actualiza inputs de lat/lon
+ * @param {number|null} [options.accuracy] - Precisión en metros
+ * @param {boolean} [options.showToast] - Muestra notificación al usuario
+ */
+function applyCoordinates(lat, lon, options = {}) {
+  const latitude = Number(lat);
+  const longitude = Number(lon);
+  const accuracy = options.accuracy ?? null;
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    setCoordsText(null, null);
+    setAddressText("Ubicación aproximada: -");
+    return;
+  }
+
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return;
+  }
+
+  if (options.updateFields !== false) {
+    fields.latitude.value = latitude.toFixed(6);
+    fields.longitude.value = longitude.toFixed(6);
+  }
+
+  setCoordsText(latitude, longitude, accuracy);
+  updateMapLocation(latitude, longitude, accuracy);
+  toggleMapOverlay(false);
+  scheduleReverseGeocode(latitude, longitude);
+
+  if (options.showToast) {
+    showToast("Ubicación actualizada en el mapa.");
   }
 }
 
 locationButton.addEventListener("click", () => {
   if (!navigator.geolocation) {
-    showToast("Tu navegador no soporta geolocalizacion.");
+    showToast("Tu navegador no soporta geolocalización.");
     return;
   }
 
   setStatus("Ubicando");
+  setLocationButtonLoading(true);
   navigator.geolocation.getCurrentPosition(
     (position) => {
       const { latitude, longitude } = position.coords;
-      fields.latitude.value = latitude.toFixed(6);
-      fields.longitude.value = longitude.toFixed(6);
-      coordsText.textContent = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-      updateMapLocation(latitude, longitude);
-      setStatus("Ubicacion obtenida");
-      showToast("Ubicacion cargada exitosamente.");
+      applyCoordinates(latitude, longitude, {
+        accuracy: position.coords.accuracy,
+        showToast: true
+      });
+      setStatus("Ubicación obtenida");
+      setLocationButtonLoading(false);
     },
-    () => {
+    (error) => {
       setStatus("Listo");
-      showToast("No se pudo obtener la ubicacion. Ingresa latitud y longitud manualmente.");
+      setLocationButtonLoading(false);
+      let errorMessage = "No se pudo obtener la ubicación. Intenta de nuevo.";
+      if (error?.code === 1) {
+        errorMessage = "Permiso denegado para la ubicación. Activa el GPS o ingresa coordenadas.";
+      } else if (error?.code === 2) {
+        errorMessage = "No se pudo determinar la ubicación. Intenta de nuevo.";
+      } else if (error?.code === 3) {
+        errorMessage = "Tiempo de espera agotado. Ingresa latitud y longitud manualmente.";
+      }
+      showToast(errorMessage);
     },
     {
       enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 60000
+      timeout: GEOLOCATION_TIMEOUT_MS,
+      maximumAge: GEOLOCATION_MAX_AGE_MS
     }
   );
 });
 
-// Actualizar mapa cuando el usuario modifica latitud o longitud
-fields.latitude.addEventListener("change", () => {
-  updateMapLocation(fields.latitude.value, fields.longitude.value);
-});
+/**
+ * Maneja la entrada manual de coordenadas desde los campos del formulario.
+ */
+function handleManualCoordinateInput() {
+  if (manualInputTimer) {
+    window.clearTimeout(manualInputTimer);
+  }
 
-fields.longitude.addEventListener("change", () => {
-  updateMapLocation(fields.latitude.value, fields.longitude.value);
-});
+  if (!fields.latitude.value || !fields.longitude.value) {
+    setCoordsText(null, null);
+    setAddressText("Ubicación aproximada: -");
+    toggleMapOverlay(true);
+    return;
+  }
+
+  manualInputTimer = window.setTimeout(() => {
+    const latitude = Number(fields.latitude.value);
+    const longitude = Number(fields.longitude.value);
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      setCoordsText(null, null);
+      setAddressText("Ubicación aproximada: -");
+      toggleMapOverlay(true);
+      return;
+    }
+
+    applyCoordinates(latitude, longitude, { updateFields: false });
+  }, MANUAL_INPUT_DEBOUNCE_MS);
+}
+
+// Actualizar mapa cuando el usuario modifica latitud o longitud
+fields.latitude.addEventListener("input", handleManualCoordinateInput);
+fields.longitude.addEventListener("input", handleManualCoordinateInput);
 
 /**
  * Obtiene los valores actuales del formulario
@@ -628,15 +831,19 @@ function renderCropAnalysis(data) {
   // Pronóstico
   const forecastContainer = document.querySelector("#analysisForecast");
   forecastContainer.innerHTML = "";
-  data.weather.forecast.forEach((day) => {
-    const row = document.createElement("div");
-    row.className = "forecast-day";
-    row.innerHTML = `
-      <strong>${day.date}</strong>
-      <span>${formatNumber(day.temperatureMin)}-${formatNumber(day.temperatureMax)} C - lluvia ${formatNumber(day.rainProbability, 0)}%</span>
-    `;
-    forecastContainer.appendChild(row);
-  });
+  if (!data.weather.forecast?.length) {
+    forecastContainer.innerHTML = "<p class='muted'>Pronóstico no disponible.</p>";
+  } else {
+    data.weather.forecast.forEach((day) => {
+      const row = document.createElement("div");
+      row.className = "forecast-day";
+      row.innerHTML = `
+        <strong>${day.date}</strong>
+        <span>${formatNumber(day.temperatureMin)}-${formatNumber(day.temperatureMax)} C - lluvia ${formatNumber(day.rainProbability, 0)}%</span>
+      `;
+      forecastContainer.appendChild(row);
+    });
+  }
 
   if (data.cropWarning) {
     showToast(`Usando catálogo local: ${data.cropWarning}`);
