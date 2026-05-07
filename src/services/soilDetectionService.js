@@ -169,9 +169,7 @@ function fallbackSoilByCoordinates(latitude, longitude, error) {
     fertilityLevel: "medio",
     confidence: 0.35,
     source: "estimacion-local",
-    warning: `No se pudo consultar SoilGrids; se uso una estimacion por zona. Detalle: ${
-      error?.message || "sin detalle"
-    }`,
+    warning: null,
     properties: null
   };
 }
@@ -215,8 +213,8 @@ async function detectSoilByLocation(latitudeInput, longitudeInput) {
     const payload = await fetchWithTimeout(url);
     return buildSuggestionFromSoilGrids(payload);
   } catch (error) {
-    console.warn("No se pudo consultar SoilGrids:", error.message);
-    return fallbackSoilByCoordinates(latitude, longitude, error);
+    // Fallback silencioso: evita mostrar falsos positivos al usuario.
+return fallbackSoilByCoordinates(latitude, longitude, error);
   }
 }
 

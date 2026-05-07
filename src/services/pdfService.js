@@ -141,6 +141,29 @@ function createAgriculturalReportPdf(data) {
     writeList(doc, data.plan.care);
   }
 
+  
+  if (data.plan?.irrigationWater) {
+    writeKeyValue(
+      doc,
+      "Agua estimada por riego",
+      `${data.plan.irrigationWater.totalLiters} L aprox. (${data.plan.irrigationWater.depthMm} mm para ${data.plan.irrigationWater.landSizeHa} ha)`
+    );
+  }
+
+  if (data.plan?.membership) {
+    writeSectionTitle(doc, "Membresia y alertas en tiempo real");
+    writeKeyValue(doc, "Plan", data.plan.membership.name);
+    writeKeyValue(doc, "Costo", data.plan.membership.billingLabel || `${data.plan.membership.monthlyCostMXN} ${data.plan.membership.currency}/mes`);
+    writeKeyValue(doc, "Metodo de pago", data.plan.membership.paymentMethod);
+    writeKeyValue(doc, "Estado", data.plan.membership.status);
+
+    if (data.plan.notifications?.length) {
+      doc.moveDown(0.35).font("Helvetica-Bold").text("Notificaciones incluidas:");
+      doc.font("Helvetica");
+      writeList(doc, data.plan.notifications.map((item) => `${item.title}: ${item.message}`));
+    }
+  }
+
   writeSectionTitle(doc, "Pronostico basico");
   writeList(doc, data.weather.forecast.map(formatForecast));
 
