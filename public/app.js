@@ -1,5 +1,6 @@
 const mainForm = document.querySelector("#mainForm");
 const locationButton = document.querySelector("#locationButton");
+const detectSoilButton = document.querySelector("#detectSoilButton");
 const coordsText = document.querySelector("#coordsText");
 const statusText = document.querySelector("#connectionStatus");
 const toast = document.querySelector("#toast");
@@ -15,21 +16,6 @@ const pdfButton = document.querySelector("#pdfButton");
 const miniMapDiv = document.querySelector("#miniMap");
 const mapOverlay = document.querySelector("#mapOverlay");
 const addressText = document.querySelector("#addressText");
-let allCrops = [];
-let lastReportRequest = null;
-let map = null;
-let mapMarker = null;
-let mapAccuracyCircle = null;
-let reverseLookupTimer = null;
-let reverseLookupRequestId = 0;
-let manualInputTimer = null;
-const LOCATION_DEBOUNCE_MS = 700;
-const MANUAL_INPUT_DEBOUNCE_MS = 500;
-const REVERSE_GEOCODE_ENDPOINT = "/api/geocode/reverse";
-const LOCATION_BUTTON_LABEL = "Usar ubicación actual";
-const LOCATION_BUTTON_LOADING_LABEL = "Localizando...";
-const GEOLOCATION_TIMEOUT_MS = 15000;
-const GEOLOCATION_MAX_AGE_MS = 30000;
 
 const fields = {
   latitude: document.querySelector("#latitude"),
@@ -39,44 +25,110 @@ const fields = {
   landSizeHa: document.querySelector("#landSizeHa")
 };
 
-/**
- * Actualiza el estado de conexión mostrado en la interfaz
- * @param {string} message - Mensaje de estado
- */
+const soilUi = {
+  status: document.querySelector("#soilAutoStatus"),
+  source: document.querySelector("#soilAutoSource"),
+  texture: document.querySelector("#soilAutoTexture"),
+  fertility: document.querySelector("#soilAutoFertility"),
+  confidence: document.querySelector("#soilAutoConfidence"),
+  hint: document.querySelector("#soilAutoHint"),
+  properties: document.querySelector("#soilAutoProperties")
+};
+
+let allCrops = [];
+let lastReportRequest = null;
+let lastSoilDetection = null;
+let soilAutoMode = true;
+let isApplyingSoilSuggestion = false;
+
+let map = null;
+let mapMarker = null;
+let mapAccuracyCircle = null;
+
+let reverseLookupTimer = null;
+let reverseLookupRequestId = 0;
+let manualInputTimer = null;
+let soilDetectionTimer = null;
+let soilDetectionRequestId = 0;
+
+const LOCATION_DEBOUNCE_MS = 700;
+const MANUAL_INPUT_DEBOUNCE_MS = 500;
+const SOIL_DETECTION_DEBOUNCE_MS = 750;
+const REVERSE_GEOCODE_ENDPOINT = "/api/geocode/reverse";
+const SOIL_DETECTION_ENDPOINT = "/api/soil/detect";
+const LOCATION_BUTTON_LABEL = "Usar ubicacion actual";
+const LOCATION_BUTTON_LOADING_LABEL = "Localizando...";
+const GEOLOCATION_TIMEOUT_MS = 15000;
+const GEOLOCATION_MAX_AGE_MS = 30000;
+
+const SOIL_LABELS = {
+  auto: "Automatico",
+  franco: "Franco",
+  arenoso: "Arenoso",
+  arcilloso: "Arcilloso",
+  limoso: "Limoso"
+};
+
+const FERTILITY_LABELS = {
+  auto: "Automatica",
+  bueno: "Bueno",
+  medio: "Medio",
+  pobre: "Pobre"
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadAndSetupCrops();
+  initializeMap();
+  updateCropClearButton();
+  updateSoilAutoCardFromManual();
+});
+
 function setStatus(message) {
-  statusText.textContent = message;
+  if (statusText) {
+    statusText.textContent = message;
+  }
 }
 
-/**
- * Muestra una notificación temporal
- * @param {string} message - Mensaje a mostrar
- */
 function showToast(message) {
+  if (!toast) return;
+
   toast.textContent = message;
   toast.classList.remove("hidden");
-  window.setTimeout(() => toast.classList.add("hidden"), 5200);
+  window.clearTimeout(showToast.timeoutId);
+  showToast.timeoutId = window.setTimeout(() => toast.classList.add("hidden"), 5400);
 }
 
-/**
- * Habilita/deshabilita el formulario durante carga
- * @param {boolean} isLoading - Estado de carga
- */
 function setLoading(isLoading) {
-  const submitButton = mainForm.querySelector("button[type='submit']");
-  submitButton.disabled = isLoading;
-  submitButton.textContent = isLoading ? "Analizando parcela..." : "Generar plan agricola";
+  const submitButton = mainForm?.querySelector("button[type='submit']");
+
+  if (submitButton) {
+    submitButton.disabled = isLoading;
+    submitButton.textContent = isLoading ? "Analizando parcela..." : "Generar plan agricola";
+  }
+
   setStatus(isLoading ? "Consultando" : "Listo");
 }
 
 function setLocationButtonLoading(isLoading) {
+  if (!locationButton) return;
+
   locationButton.disabled = isLoading;
   const label = isLoading ? LOCATION_BUTTON_LOADING_LABEL : LOCATION_BUTTON_LABEL;
   locationButton.innerHTML = `<span aria-hidden="true">GPS</span> ${label}`;
 }
 
+function setSoilDetectionLoading(isLoading) {
+  if (!detectSoilButton) return;
+
+  detectSoilButton.disabled = isLoading;
+  detectSoilButton.textContent = isLoading ? "Detectando..." : "Detectar suelo";
+}
+
 function setCoordsText(latitude, longitude, accuracy) {
+  if (!coordsText) return;
+
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    coordsText.textContent = "Sin ubicación";
+    coordsText.textContent = "Sin ubicacion";
     return;
   }
 
@@ -85,19 +137,15 @@ function setCoordsText(latitude, longitude, accuracy) {
 }
 
 function setAddressText(message) {
-  addressText.textContent = message;
+  if (addressText) {
+    addressText.textContent = message;
+  }
 }
 
 function toggleMapOverlay(isVisible) {
-  mapOverlay.classList.toggle("hidden", !isVisible);
+  mapOverlay?.classList.toggle("hidden", !isVisible);
 }
 
-/**
- * Formatea un número con locale de México
- * @param {number|null} value - Valor a formatear
- * @param {number} digits - Dígitos decimales (default 1)
- * @returns {string} Número formateado o "-"
- */
 function formatNumber(value, digits = 1) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) {
     return "-";
@@ -108,18 +156,38 @@ function formatNumber(value, digits = 1) {
   });
 }
 
-/**
- * Rellena una lista HTML con items
- * @param {string} elementId - ID del elemento lista
- * @param {string[]} items - Items a mostrar
- */
+function formatPercent(value) {
+  if (!Number.isFinite(Number(value))) {
+    return "-";
+  }
+
+  return `${Math.round(Number(value) * 100)}%`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function fillList(elementId, items) {
   const element = document.querySelector(`#${elementId}`);
+
   if (!element) {
-    console.warn(`Elemento #${elementId} no encontrado`);
     return;
   }
+
   element.innerHTML = "";
+
+  if (!items?.length) {
+    const li = document.createElement("li");
+    li.textContent = "Sin datos disponibles.";
+    element.appendChild(li);
+    return;
+  }
 
   items.forEach((item) => {
     const li = document.createElement("li");
@@ -128,89 +196,36 @@ function fillList(elementId, items) {
   });
 }
 
-function renderForecast(forecast) {
-  const container = document.querySelector("#forecastList");
-  container.innerHTML = "";
-
-  if (!forecast?.length) {
-    container.innerHTML = "<p class='muted'>Pronóstico no disponible.</p>";
-    return;
-  }
-
-  forecast.forEach((day) => {
-    const row = document.createElement("div");
-    row.className = "forecast-day";
-    row.innerHTML = `
-      <strong>${day.date}</strong>
-      <span>${formatNumber(day.temperatureMin)}-${formatNumber(day.temperatureMax)} C - lluvia ${formatNumber(day.rainProbability, 0)}%</span>
-    `;
-    container.appendChild(row);
-  });
-}
-
-function renderFertilization(dates) {
-  const list = document.querySelector("#fertilizationDates");
-  list.innerHTML = "";
-
-  dates.forEach((item) => {
-    const li = document.createElement("li");
-    li.textContent = `${item.date}: ${item.task}`;
-    list.appendChild(li);
-  });
-}
-
-function renderResults(data) {
-  emptyState.classList.add("hidden");
-  results.classList.remove("hidden");
-  pdfButton.classList.remove("hidden");
-
-  document.querySelector("#cropName").textContent = data.crop.name;
-  document.querySelector("#cropMeta").textContent = `${data.crop.waterRequirement} - ${data.crop.growthTimeDays} dias de crecimiento - fuente: ${data.cropSource}`;
-  document.querySelector("#productionTotal").textContent = formatNumber(data.production.totalTon, 2);
-  document.querySelector("#temperature").textContent = `${formatNumber(data.weather.current.temperature)} C`;
-  document.querySelector("#humidity").textContent = `${formatNumber(data.weather.current.humidity, 0)}%`;
-  document.querySelector("#rainProbability").textContent = `${formatNumber(data.weather.current.rainProbability, 0)}%`;
-  document.querySelector("#climateLabel").textContent = data.climate.label;
-  document.querySelector("#irrigationPlan").textContent = data.plan.irrigation;
-  document.querySelector("#yieldValue").textContent = `${formatNumber(data.production.theoreticalYieldTonHa, 2)} ton/ha`;
-  document.querySelector("#ccValue").textContent = data.production.climateCoefficient;
-  document.querySelector("#cfValue").textContent = `${data.production.soilCoefficient} (${data.soil.fertilityLevel})`;
-
-  fillList("recommendations", data.recommendations);
-  renderFertilization(data.plan.fertilizationDates);
-  renderForecast(data.weather.forecast);
-
-  if (data.cropWarning) {
-    showToast(`Perenual no respondio; usando catalogo local. ${data.cropWarning}`);
-  }
-
-  if (data.weather?.warning) {
-    showToast(data.weather.warning);
-  }
-}
-
-/**
- * Carga la lista de cultivos y configura el buscador
- */
 async function loadAndSetupCrops() {
-  cropSearchHelp.textContent = "Cargando catalogo de cultivos...";
+  if (cropSearchHelp) {
+    cropSearchHelp.textContent = "Cargando catalogo de cultivos...";
+  }
 
   try {
     const response = await fetch("/api/crops");
+
     if (!response.ok) {
       throw new Error("No se pudo cargar el catalogo.");
     }
 
     const data = await response.json();
     allCrops = sortCrops(data.crops || []);
-    const sourceLabel = data.source === "catalogo-local+Perenual"
-      ? "catalogo local con datos Perenual"
-      : "catalogo local";
-    cropSearchHelp.textContent = `${allCrops.length} cultivos disponibles desde ${sourceLabel}.`;
+
+    const sourceLabel =
+      data.source === "catalogo-local+Perenual"
+        ? "catalogo local con datos Perenual"
+        : "catalogo local";
+
+    if (cropSearchHelp) {
+      cropSearchHelp.textContent = `${allCrops.length} cultivos disponibles desde ${sourceLabel}.`;
+    }
   } catch (error) {
     console.error("Error al cargar cultivos:", error);
     allCrops = [];
-    cropSearchHelp.textContent = "No se pudo cargar el catalogo. Puedes escribir el cultivo manualmente.";
+
+    if (cropSearchHelp) {
+      cropSearchHelp.textContent = "No se pudo cargar el catalogo. Puedes escribir el cultivo manualmente.";
+    }
   }
 }
 
@@ -247,14 +262,10 @@ function rankCropMatch(crop, search) {
   if (name === search || id === search) return 0;
   if (name.startsWith(search)) return 1;
   if (id.startsWith(search)) return 2;
+
   return 3;
 }
 
-/**
- * Filtra cultivos basado en el texto de búsqueda
- * @param {string} searchText - Texto a buscar
- * @returns {array} Cultivos que coinciden
- */
 function filterCrops(searchText) {
   const search = normalizeSearchValue(searchText);
 
@@ -264,16 +275,22 @@ function filterCrops(searchText) {
 
   return allCrops
     .filter((crop) => normalizeSearchValue(getCropSearchText(crop)).includes(search))
-    .sort((a, b) => rankCropMatch(a, search) - rankCropMatch(b, search) || a.name.localeCompare(b.name, "es-MX"));
+    .sort(
+      (a, b) =>
+        rankCropMatch(a, search) - rankCropMatch(b, search) ||
+        a.name.localeCompare(b.name, "es-MX")
+    );
 }
 
 function setCropDropdownVisible(isVisible) {
+  if (!cropDropdown || !cropSearchInput) return;
+
   cropDropdown.classList.toggle("hidden", !isVisible);
   cropSearchInput.setAttribute("aria-expanded", String(isVisible));
 }
 
 function updateCropClearButton() {
-  cropClearButton.classList.toggle("hidden", !cropSearchInput.value.trim());
+  cropClearButton?.classList.toggle("hidden", !cropSearchInput?.value.trim());
 }
 
 function buildCropMeta(crop) {
@@ -290,22 +307,21 @@ function buildCropMeta(crop) {
   return parts.join(" - ");
 }
 
-/**
- * Renderiza el dropdown de cultivos
- * @param {array} crops - Cultivos a mostrar
- */
 function renderCropDropdown(crops) {
+  if (!cropDropdown) return;
+
   cropDropdown.innerHTML = "";
-  
+
   if (crops.length === 0) {
     const emptyOption = document.createElement("div");
     emptyOption.className = "crop-empty-option";
-    emptyOption.textContent = "No se encontro en el catalogo. Puedes enviar el nombre escrito como cultivo personalizado.";
+    emptyOption.textContent =
+      "No se encontro en el catalogo. Puedes enviar el nombre escrito como cultivo personalizado.";
     cropDropdown.appendChild(emptyOption);
     return;
   }
-  
-  crops.forEach(crop => {
+
+  crops.slice(0, 24).forEach((crop) => {
     const option = document.createElement("button");
     const main = document.createElement("span");
     const name = document.createElement("span");
@@ -332,10 +348,6 @@ function renderCropDropdown(crops) {
   });
 }
 
-/**
- * Selecciona un cultivo del dropdown
- * @param {object} crop - Cultivo seleccionado
- */
 function selectCrop(crop) {
   cropSearchInput.value = crop.name;
   selectedCropId.value = crop.id;
@@ -344,32 +356,28 @@ function selectCrop(crop) {
   updateCropClearButton();
 }
 
-// Event listener para búsqueda de cultivos
-cropSearchInput.addEventListener("input", (e) => {
-  const searchText = e.target.value;
+cropSearchInput?.addEventListener("input", (event) => {
+  const searchText = event.target.value;
   const filtered = filterCrops(searchText);
+
   renderCropDropdown(filtered);
   updateCropClearButton();
-  
   setCropDropdownVisible(Boolean(searchText.trim()) || allCrops.length > 0);
-  
-  // Limpiar selección si el usuario modifica el texto
-  if (e.target.value !== selectedCropName.value) {
+
+  if (event.target.value !== selectedCropName.value) {
     selectedCropId.value = "";
     selectedCropName.value = "";
   }
 });
 
-// Mostrar dropdown al hacer focus
-cropSearchInput.addEventListener("focus", () => {
+cropSearchInput?.addEventListener("focus", () => {
   if (cropSearchInput.value.trim() || allCrops.length > 0) {
-    const filtered = filterCrops(cropSearchInput.value);
-    renderCropDropdown(filtered);
+    renderCropDropdown(filterCrops(cropSearchInput.value));
     setCropDropdownVisible(true);
   }
 });
 
-cropClearButton.addEventListener("click", () => {
+cropClearButton?.addEventListener("click", () => {
   cropSearchInput.value = "";
   selectedCropId.value = "";
   selectedCropName.value = "";
@@ -379,45 +387,39 @@ cropClearButton.addEventListener("click", () => {
   cropSearchInput.focus();
 });
 
-// Cerrar dropdown al hacer click afuera
-document.addEventListener("click", (e) => {
-  if (!e.target.closest(".crop-field")) {
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".crop-field")) {
     setCropDropdownVisible(false);
   }
 });
 
-// Cargar cultivos cuando carga la página
-document.addEventListener("DOMContentLoaded", () => {
-  loadAndSetupCrops();
-  initializeMap();
-});
-
-/**
- * Inicializa el mapa de Leaflet
- */
 function initializeMap() {
-  if (map !== null) return; // Ya inicializado
-  
-  // Crear mapa centrado en México por defecto
-  map = L.map(miniMapDiv).setView([23.6345, -102.5528], 5);
-  
-  // Agregar tiles de OpenStreetMap
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
+  if (map !== null || !miniMapDiv) return;
+
+  if (typeof L === "undefined") {
+    miniMapDiv.innerHTML = `<div class="map-fallback">Mapa no disponible. Usa GPS o escribe coordenadas.</div>`;
+    toggleMapOverlay(false);
+    return;
+  }
+
+  map = L.map(miniMapDiv, {
+    zoomControl: true,
+    scrollWheelZoom: true
+  }).setView([23.6345, -102.5528], 5);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OpenStreetMap contributors",
     maxZoom: 19
   }).addTo(map);
 
   map.on("click", (event) => {
     const { lat, lng } = event.latlng;
-    applyCoordinates(lat, lng, { source: "map" });
+    applyCoordinates(lat, lng, { source: "map", showToast: true });
   });
 
   toggleMapOverlay(true);
 }
 
-/**
- * Actualiza el mapa con las coordenadas actuales
- */
 function updateMapLocation(lat, lon, accuracy = null) {
   if (map === null) return;
 
@@ -438,13 +440,13 @@ function updateMapLocation(lat, lon, accuracy = null) {
     mapMarker.setLatLng([latNum, lonNum]);
   } else {
     mapMarker = L.marker([latNum, lonNum], {
-      title: "Tu ubicación",
+      title: "Tu ubicacion",
       draggable: true
     }).addTo(map);
 
     mapMarker.on("dragend", (event) => {
       const { lat, lng } = event.target.getLatLng();
-      applyCoordinates(lat, lng, { source: "marker" });
+      applyCoordinates(lat, lng, { source: "marker", showToast: true });
     });
   }
 
@@ -455,9 +457,9 @@ function updateMapLocation(lat, lon, accuracy = null) {
     } else {
       mapAccuracyCircle = L.circle([latNum, lonNum], {
         radius: accuracy,
-        color: "#256a8a",
-        fillColor: "#256a8a",
-        fillOpacity: 0.15
+        color: "#1f7a4f",
+        fillColor: "#1f7a4f",
+        fillOpacity: 0.13
       }).addTo(map);
     }
   } else if (mapAccuracyCircle) {
@@ -466,11 +468,6 @@ function updateMapLocation(lat, lon, accuracy = null) {
   }
 }
 
-/**
- * Programa una consulta de geocodificación inversa con debounce.
- * @param {number} lat - Latitud válida
- * @param {number} lon - Longitud válida
- */
 function scheduleReverseGeocode(lat, lon) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
     return;
@@ -489,15 +486,9 @@ function isStaleReverseLookup(requestId) {
   return requestId !== reverseLookupRequestId;
 }
 
-/**
- * Obtiene el nombre aproximado de la ubicación usando Nominatim.
- * @param {number} lat - Latitud
- * @param {number} lon - Longitud
- * @returns {Promise<void>} Actualiza el texto de ubicación en la interfaz
- */
 async function fetchReverseGeocode(lat, lon) {
   const requestId = ++reverseLookupRequestId;
-  setAddressText("Ubicación aproximada: buscando...");
+  setAddressText("Ubicacion aproximada: buscando...");
 
   try {
     const response = await fetch(REVERSE_GEOCODE_ENDPOINT, {
@@ -505,36 +496,25 @@ async function fetchReverseGeocode(lat, lon) {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        latitude: lat,
-        longitude: lon
-      })
+      body: JSON.stringify({ latitude: lat, longitude: lon })
     });
 
     if (!response.ok) {
-      throw new Error("No se pudo obtener la ubicación.");
+      throw new Error("No se pudo obtener la ubicacion.");
     }
 
     const payload = await response.json();
+
     if (isStaleReverseLookup(requestId)) return;
 
-    const name = payload.displayName || "Ubicación no disponible";
-    setAddressText(`Ubicación aproximada: ${name}`);
-  } catch (error) {
+    const name = payload.displayName || "Ubicacion no disponible";
+    setAddressText(`Ubicacion aproximada: ${name}`);
+  } catch (_error) {
     if (isStaleReverseLookup(requestId)) return;
-    setAddressText("Ubicación aproximada: no disponible");
+    setAddressText("Ubicacion aproximada: no disponible");
   }
 }
 
-/**
- * Aplica coordenadas válidas a la UI, mapa y geocodificación inversa.
- * @param {number|string} lat - Latitud
- * @param {number|string} lon - Longitud
- * @param {object} [options] - Opciones de actualización
- * @param {boolean} [options.updateFields=true] - Actualiza inputs de lat/lon
- * @param {number|null} [options.accuracy] - Precisión en metros
- * @param {boolean} [options.showToast] - Muestra notificación al usuario
- */
 function applyCoordinates(lat, lon, options = {}) {
   const latitude = Number(lat);
   const longitude = Number(lon);
@@ -542,7 +522,7 @@ function applyCoordinates(lat, lon, options = {}) {
 
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     setCoordsText(null, null);
-    setAddressText("Ubicación aproximada: -");
+    setAddressText("Ubicacion aproximada: -");
     return;
   }
 
@@ -559,41 +539,48 @@ function applyCoordinates(lat, lon, options = {}) {
   updateMapLocation(latitude, longitude, accuracy);
   toggleMapOverlay(false);
   scheduleReverseGeocode(latitude, longitude);
+  scheduleSoilDetection(latitude, longitude);
 
   if (options.showToast) {
-    showToast("Ubicación actualizada en el mapa.");
+    showToast("Ubicacion actualizada. Detectando suelo si esta en modo automatico.");
   }
 }
 
-locationButton.addEventListener("click", () => {
+locationButton?.addEventListener("click", () => {
   if (!navigator.geolocation) {
-    showToast("Tu navegador no soporta geolocalización.");
+    showToast("Tu navegador no soporta geolocalizacion.");
     return;
   }
 
   setStatus("Ubicando");
   setLocationButtonLoading(true);
+
   navigator.geolocation.getCurrentPosition(
     (position) => {
       const { latitude, longitude } = position.coords;
+
       applyCoordinates(latitude, longitude, {
         accuracy: position.coords.accuracy,
         showToast: true
       });
-      setStatus("Ubicación obtenida");
+
+      setStatus("Ubicacion obtenida");
       setLocationButtonLoading(false);
     },
     (error) => {
       setStatus("Listo");
       setLocationButtonLoading(false);
-      let errorMessage = "No se pudo obtener la ubicación. Intenta de nuevo.";
+
+      let errorMessage = "No se pudo obtener la ubicacion. Intenta de nuevo.";
+
       if (error?.code === 1) {
-        errorMessage = "Permiso denegado para la ubicación. Activa el GPS o ingresa coordenadas.";
+        errorMessage = "Permiso denegado para la ubicacion. Activa el GPS o ingresa coordenadas.";
       } else if (error?.code === 2) {
-        errorMessage = "No se pudo determinar la ubicación. Intenta de nuevo.";
+        errorMessage = "No se pudo determinar la ubicacion. Intenta de nuevo.";
       } else if (error?.code === 3) {
         errorMessage = "Tiempo de espera agotado. Ingresa latitud y longitud manualmente.";
       }
+
       showToast(errorMessage);
     },
     {
@@ -604,9 +591,6 @@ locationButton.addEventListener("click", () => {
   );
 });
 
-/**
- * Maneja la entrada manual de coordenadas desde los campos del formulario.
- */
 function handleManualCoordinateInput() {
   if (manualInputTimer) {
     window.clearTimeout(manualInputTimer);
@@ -614,8 +598,9 @@ function handleManualCoordinateInput() {
 
   if (!fields.latitude.value || !fields.longitude.value) {
     setCoordsText(null, null);
-    setAddressText("Ubicación aproximada: -");
+    setAddressText("Ubicacion aproximada: -");
     toggleMapOverlay(true);
+    resetSoilAutoCard("Esperando coordenadas");
     return;
   }
 
@@ -625,8 +610,9 @@ function handleManualCoordinateInput() {
 
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
       setCoordsText(null, null);
-      setAddressText("Ubicación aproximada: -");
+      setAddressText("Ubicacion aproximada: -");
       toggleMapOverlay(true);
+      resetSoilAutoCard("Coordenadas no validas");
       return;
     }
 
@@ -634,70 +620,305 @@ function handleManualCoordinateInput() {
   }, MANUAL_INPUT_DEBOUNCE_MS);
 }
 
-// Actualizar mapa cuando el usuario modifica latitud o longitud
-fields.latitude.addEventListener("input", handleManualCoordinateInput);
-fields.longitude.addEventListener("input", handleManualCoordinateInput);
+fields.latitude?.addEventListener("input", handleManualCoordinateInput);
+fields.longitude?.addEventListener("input", handleManualCoordinateInput);
 
-/**
- * Obtiene los valores actuales del formulario
- * @returns {object} Objeto con los datos del formulario
- */
+function getCurrentCoordinates() {
+  const latitude = Number(fields.latitude.value);
+  const longitude = Number(fields.longitude.value);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return null;
+  }
+
+  return { latitude, longitude };
+}
+
+function scheduleSoilDetection(lat, lon) {
+  if (!soilAutoMode) return;
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return;
+  }
+
+  if (soilDetectionTimer) {
+    window.clearTimeout(soilDetectionTimer);
+  }
+
+  setSoilStatus("Detectando suelo...", "loading");
+
+  soilDetectionTimer = window.setTimeout(() => {
+    detectSoilByCoordinates();
+  }, SOIL_DETECTION_DEBOUNCE_MS);
+}
+
+async function detectSoilByCoordinates(options = {}) {
+  const { force = false } = options;
+  const coordinates = getCurrentCoordinates();
+
+  if (!coordinates) {
+    resetSoilAutoCard("Agrega latitud y longitud para detectar el suelo.");
+    if (force) showToast("Primero selecciona una ubicacion o escribe coordenadas validas.");
+    return null;
+  }
+
+  if (!soilAutoMode && !force) {
+    return null;
+  }
+
+  soilAutoMode = true;
+
+  const requestId = ++soilDetectionRequestId;
+  setSoilDetectionLoading(true);
+  setSoilStatus("Detectando suelo...", "loading");
+
+  try {
+    const response = await fetch(SOIL_DETECTION_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(coordinates)
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload.error || "No se pudo detectar el suelo.");
+    }
+
+    if (requestId !== soilDetectionRequestId) {
+      return null;
+    }
+
+    applySoilSuggestion(payload);
+    return payload;
+  } catch (error) {
+    if (requestId !== soilDetectionRequestId) {
+      return null;
+    }
+
+    lastSoilDetection = null;
+    setSoilStatus("Automatico no disponible", "warning");
+    setSoilHint("El analisis intentara detectar el suelo en el servidor al generar el plan.");
+    showToast(error.message || "No se pudo detectar el suelo automaticamente.");
+    return null;
+  } finally {
+    if (requestId === soilDetectionRequestId) {
+      setSoilDetectionLoading(false);
+    }
+  }
+}
+
+detectSoilButton?.addEventListener("click", () => {
+  soilAutoMode = true;
+  isApplyingSoilSuggestion = true;
+  fields.soilType.value = "auto";
+  fields.fertilityLevel.value = "auto";
+  isApplyingSoilSuggestion = false;
+  detectSoilByCoordinates({ force: true });
+});
+
+fields.soilType?.addEventListener("change", handleSoilManualChange);
+fields.fertilityLevel?.addEventListener("change", handleSoilManualChange);
+
+function handleSoilManualChange() {
+  if (isApplyingSoilSuggestion) {
+    return;
+  }
+
+  const selectedSoil = fields.soilType.value;
+  const selectedFertility = fields.fertilityLevel.value;
+
+  soilAutoMode = selectedSoil === "auto" || selectedFertility === "auto";
+  lastSoilDetection = null;
+
+  if (soilAutoMode) {
+    detectSoilByCoordinates({ force: true });
+  } else {
+    updateSoilAutoCardFromManual();
+  }
+}
+
+function applySoilSuggestion(suggestion) {
+  lastSoilDetection = suggestion;
+  soilAutoMode = true;
+  isApplyingSoilSuggestion = true;
+
+  if (suggestion?.soilType && fields.soilType.querySelector(`option[value="${suggestion.soilType}"]`)) {
+    fields.soilType.value = suggestion.soilType;
+  }
+
+  if (
+    suggestion?.fertilityLevel &&
+    fields.fertilityLevel.querySelector(`option[value="${suggestion.fertilityLevel}"]`)
+  ) {
+    fields.fertilityLevel.value = suggestion.fertilityLevel;
+  }
+
+  isApplyingSoilSuggestion = false;
+  updateSoilAutoCardFromDetection(suggestion);
+
+  if (suggestion.warning) {
+    showToast(suggestion.warning);
+  }
+}
+
+function setSoilStatus(message, tone = "ready") {
+  if (!soilUi.status) return;
+
+  soilUi.status.textContent = message;
+  soilUi.status.classList.remove("is-loading", "is-ready", "is-warning", "is-manual");
+  soilUi.status.classList.add(`is-${tone}`);
+}
+
+function setSoilHint(message) {
+  if (soilUi.hint) {
+    soilUi.hint.textContent = message;
+  }
+}
+
+function resetSoilAutoCard(message) {
+  setSoilStatus(message, "warning");
+
+  if (soilUi.source) soilUi.source.textContent = "-";
+  if (soilUi.texture) soilUi.texture.textContent = "-";
+  if (soilUi.fertility) soilUi.fertility.textContent = "-";
+  if (soilUi.confidence) soilUi.confidence.textContent = "-";
+  if (soilUi.properties) soilUi.properties.innerHTML = "";
+}
+
+function updateSoilAutoCardFromManual() {
+  const soilLabel = SOIL_LABELS[fields.soilType.value] || fields.soilType.value || "-";
+  const fertilityLabel =
+    FERTILITY_LABELS[fields.fertilityLevel.value] || fields.fertilityLevel.value || "-";
+
+  if (soilAutoMode) {
+    resetSoilAutoCard("Esperando coordenadas");
+    setSoilHint("Usa GPS, escribe coordenadas o toca el mapa para detectar el suelo automaticamente.");
+    return;
+  }
+
+  setSoilStatus("Seleccion manual", "manual");
+
+  if (soilUi.source) soilUi.source.textContent = "manual";
+  if (soilUi.texture) soilUi.texture.textContent = soilLabel;
+  if (soilUi.fertility) soilUi.fertility.textContent = fertilityLabel;
+  if (soilUi.confidence) soilUi.confidence.textContent = "100%";
+  if (soilUi.properties) soilUi.properties.innerHTML = "";
+
+  setSoilHint("Cambiaste el suelo manualmente. Pulsa Detectar suelo para volver al modo automatico.");
+}
+
+function updateSoilAutoCardFromDetection(suggestion) {
+  const soilLabel = SOIL_LABELS[suggestion.soilType] || suggestion.soilType || "-";
+  const fertilityLabel =
+    FERTILITY_LABELS[suggestion.fertilityLevel] || suggestion.fertilityLevel || "-";
+  const source = suggestion.source || "automatico";
+
+  setSoilStatus("Detectado automaticamente", suggestion.warning ? "warning" : "ready");
+
+  if (soilUi.source) soilUi.source.textContent = source;
+  if (soilUi.texture) soilUi.texture.textContent = soilLabel;
+  if (soilUi.fertility) soilUi.fertility.textContent = fertilityLabel;
+  if (soilUi.confidence) soilUi.confidence.textContent = formatPercent(suggestion.confidence);
+
+  if (soilUi.properties) {
+    soilUi.properties.innerHTML = buildSoilPropertiesHtml(suggestion.properties);
+  }
+
+  const hint = suggestion.warning
+    ? "Se uso una estimacion local porque SoilGrids no respondio."
+    : "El tipo de suelo y fertilidad ya se aplicaron al formulario.";
+
+  setSoilHint(hint);
+}
+
+function buildSoilPropertiesHtml(properties) {
+  if (!properties) {
+    return "";
+  }
+
+  const items = [
+    ["Arena", properties.sand, "%"],
+    ["Limo", properties.silt, "%"],
+    ["Arcilla", properties.clay, "%"],
+    ["pH", properties.phh2o, ""],
+    ["CEC", properties.cec, ""],
+    ["Carbono organico", properties.soc, ""]
+  ];
+
+  return items
+    .map(
+      ([label, value, suffix]) => `
+        <span>
+          <b>${escapeHtml(label)}</b>
+          ${formatNumber(value, label === "pH" ? 1 : 0)}${suffix}
+        </span>
+      `
+    )
+    .join("");
+}
+
 function getFormData() {
+  const soilType = soilAutoMode ? lastSoilDetection?.soilType || "auto" : fields.soilType.value;
+  const fertilityLevel = soilAutoMode
+    ? lastSoilDetection?.fertilityLevel || "auto"
+    : fields.fertilityLevel.value;
+
   return {
     latitude: fields.latitude.value,
     longitude: fields.longitude.value,
-    soilType: fields.soilType.value,
-    fertilityLevel: fields.fertilityLevel.value,
+    soilType,
+    fertilityLevel,
     landSizeHa: fields.landSizeHa.value,
     cropId: selectedCropId.value,
     customCrop: cropSearchInput.value
   };
 }
 
-mainForm.addEventListener("submit", async (event) => {
+mainForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
-  
+
   const formData = getFormData();
-  
-  // Validar coordenadas
-  const latitude = parseFloat(formData.latitude);
-  const longitude = parseFloat(formData.longitude);
-  
-  if (isNaN(latitude) || isNaN(longitude)) {
-    showToast("Por favor ingresa coordenadas válidas (latitud y longitud).");
+  const latitude = Number(formData.latitude);
+  const longitude = Number(formData.longitude);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    showToast("Por favor ingresa coordenadas validas.");
     return;
   }
-  
+
   if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-    showToast("Las coordenadas no son válidas. Latitud: -90 a 90, Longitud: -180 a 180.");
+    showToast("Las coordenadas no son validas. Latitud: -90 a 90, Longitud: -180 a 180.");
     return;
   }
 
-  // Validar que los demás campos requeridos están llenos
-  if (!formData.soilType || !formData.fertilityLevel || !formData.landSizeHa) {
-    showToast("Por favor completa todos los campos del suelo y tamaño del terreno.");
+  if (!formData.landSizeHa || Number(formData.landSizeHa) <= 0) {
+    showToast("Por favor ingresa el tamano del terreno en hectareas.");
     return;
   }
 
-  // Validar que seleccione o escriba un cultivo
   if (!formData.customCrop.trim()) {
     showToast("Por favor busca y selecciona un cultivo o escribe uno.");
     return;
   }
-  
+
   setLoading(true);
 
   try {
-    // Preparar datos para enviar
     const requestData = {
-      latitude: latitude,
-      longitude: longitude,
+      latitude,
+      longitude,
       soilType: formData.soilType,
       fertilityLevel: formData.fertilityLevel,
       landSizeHa: formData.landSizeHa
     };
 
-    // Si tiene ID de cultivo, usarlo; si no, enviar el nombre personalizado
     if (formData.cropId) {
       requestData.cropId = formData.cropId;
     } else {
@@ -713,32 +934,39 @@ mainForm.addEventListener("submit", async (event) => {
     });
 
     const payload = await response.json();
-    
+
     if (!response.ok) {
       throw new Error(payload.error || "No se pudo analizar el cultivo.");
     }
 
+    if (payload.soilDetection && payload.soilDetection.source !== "manual") {
+      applySoilSuggestion(payload.soilDetection);
+    }
+
     lastReportRequest = {
-      latitude: latitude,
-      longitude: longitude,
-      soilType: formData.soilType,
-      fertilityLevel: formData.fertilityLevel,
+      latitude,
+      longitude,
+      soilType: payload.soil?.soilType || payload.soilDetection?.soilType || requestData.soilType,
+      fertilityLevel:
+        payload.soil?.fertilityLevel ||
+        payload.soilDetection?.fertilityLevel ||
+        requestData.fertilityLevel,
       landSizeHa: formData.landSizeHa,
       cropId: requestData.cropId || null,
       customCrop: requestData.customCrop || null
     };
 
     renderCropAnalysis(payload);
-    showToast("Análisis completado.");
+    showToast("Analisis completado.");
   } catch (error) {
-    showToast(error.message || "Error de conexión. Intenta de nuevo.");
+    showToast(error.message || "Error de conexion. Intenta de nuevo.");
     console.error("Error:", error);
   } finally {
     setLoading(false);
   }
 });
 
-pdfButton.addEventListener("click", async () => {
+pdfButton?.addEventListener("click", async () => {
   if (!lastReportRequest) {
     showToast("Primero genera un plan agricola.");
     return;
@@ -763,18 +991,21 @@ pdfButton.addEventListener("click", async () => {
     }
 
     const blob = await response.blob();
+
     if (!blob || blob.size === 0) {
-      throw new Error("El PDF generado está vacío.");
+      throw new Error("El PDF generado esta vacio.");
     }
-    
+
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
+
     link.href = url;
     link.download = "reporte-pda.pdf";
     document.body.appendChild(link);
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+
     showToast("PDF descargado correctamente.");
   } catch (error) {
     showToast(error.message || "No se pudo descargar el PDF.");
@@ -786,77 +1017,133 @@ pdfButton.addEventListener("click", async () => {
   }
 });
 
-/**
- * Muestra el análisis detallado de un cultivo específico
- * @param {object} data - Datos del análisis
- */
 function renderCropAnalysis(data) {
-  emptyState.classList.add("hidden");
-  results.classList.remove("hidden");
-  pdfButton.classList.remove("hidden");
+  emptyState?.classList.add("hidden");
+  results?.classList.remove("hidden");
+  pdfButton?.classList.remove("hidden");
 
   const hasProduction = Boolean(data.production);
-  const summaryValue = hasProduction ? formatNumber(data.production.totalTon, 2) : data.climate.label;
-  const summaryLabel = hasProduction ? "ton estimadas" : "Condicion climatica";
-  const scoreText = hasProduction
-    ? `Compatibilidad: ${data.score}/100 - ${data.climate.label}`
-    : `Compatibilidad: ${data.score}/100`;
-  const productionMetric = hasProduction ? `${formatNumber(data.production.totalTon, 2)} ton` : `${data.soil.coefficient}`;
-  const productionMeta = hasProduction ? `${formatNumber(data.production.landSizeHa, 2)} ha evaluadas` : "Fertilidad del suelo";
+  const crop = data.crop || {};
+  const soil = data.soil || {};
+  const weather = data.weather || {};
+  const currentWeather = weather.current || {};
+  const detection = data.soilDetection || null;
 
-  // Limpiar resultados previos
+  const summaryValue = hasProduction
+    ? `${formatNumber(data.production.totalTon, 2)} ton`
+    : escapeHtml(data.climate?.label || "-");
+
+  const productionMeta = hasProduction
+    ? `${formatNumber(data.production.landSizeHa, 2)} ha evaluadas`
+    : "Fertilidad del suelo";
+
+  const scoreText = Number.isFinite(Number(data.score))
+    ? `Compatibilidad ${data.score}/100`
+    : "Compatibilidad sin puntaje";
+
+  const sourceTags = [
+    weather.source || "clima",
+    soil.soilLabel || SOIL_LABELS[soil.soilType] || "suelo",
+    soil.fertilityLevel || "fertilidad"
+  ];
+
   results.innerHTML = `
-    <section class="summary-band">
+    <section class="summary-band reveal-card">
       <div>
         <p class="eyebrow">Cultivo analizado</p>
-        <h2 id="analysisCropName">${data.crop.name}</h2>
-        <p id="analysisCropScore">${scoreText}</p>
+        <h2>${escapeHtml(crop.name || "-")}</h2>
+        <p>${escapeHtml(scoreText)} · ${escapeHtml(data.climate?.label || "condicion climatica")}</p>
         <div class="summary-tags">
-          <span>${data.weather.source || "clima"}</span>
-          <span>${data.soil.soilLabel}</span>
-          <span>${data.soil.fertilityLevel}</span>
+          ${sourceTags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
         </div>
       </div>
       <div class="production-number">
-        <span id="analysisClimate">${summaryValue}</span>
-        <small>${summaryLabel}</small>
+        <span>${summaryValue}</span>
+        <small>${escapeHtml(productionMeta)}</small>
       </div>
     </section>
 
     <div class="dashboard-grid">
-      <article class="metric-card">
+      <article class="metric-card metric-temperature">
+        <span class="metric-icon">°C</span>
         <p>Temperatura</p>
-        <strong id="analysisTemp">-</strong>
-        <small id="analysisTempStatus" class="metric-status"></small>
+        <strong id="analysisTemp">${formatNumber(currentWeather.temperature)} °C</strong>
+        <small>${escapeHtml(data.analysis?.temperatureStatus?.status || "-")}</small>
       </article>
-      <article class="metric-card">
+
+      <article class="metric-card metric-humidity">
+        <span class="metric-icon">%</span>
         <p>Humedad</p>
-        <strong id="analysisHumidity">-</strong>
-        <small id="analysisHumidityStatus" class="metric-status"></small>
+        <strong id="analysisHumidity">${formatNumber(currentWeather.humidity, 0)}%</strong>
+        <small>${escapeHtml(data.analysis?.humidityStatus?.status || "-")}</small>
       </article>
-      <article class="metric-card">
+
+      <article class="metric-card metric-rain">
+        <span class="metric-icon">☔</span>
         <p>Lluvia</p>
-        <strong id="analysisRain">-</strong>
-        <small id="analysisRainStatus" class="metric-status"></small>
+        <strong id="analysisRain">${formatNumber(currentWeather.rainProbability, 0)}%</strong>
+        <small>${escapeHtml(data.analysis?.rainStatus?.status || "-")}</small>
       </article>
-      <article class="metric-card">
+
+      <article class="metric-card metric-production">
+        <span class="metric-icon">Σ</span>
         <p>${hasProduction ? "Produccion" : "Coeficiente"}</p>
-        <strong id="analysisCoef">-</strong>
-        <small>${productionMeta}</small>
+        <strong id="analysisCoef">${
+          hasProduction
+            ? `${formatNumber(data.production.totalTon, 2)} ton`
+            : formatNumber(soil.coefficient, 2)
+        }</strong>
+        <small>${escapeHtml(productionMeta)}</small>
       </article>
     </div>
 
     <section class="content-grid">
-      <article class="info-block">
-        <h3>Información del Cultivo</h3>
-        <dl class="plan-list">
-          <dt>Ciclo de crecimiento</dt>
-          <dd>${data.crop.growthTimeDays} días</dd>
-          <dt>Requerimiento de agua</dt>
-          <dd>${data.crop.waterRequirement}</dd>
-          <dt>Rendimiento teórico</dt>
-          <dd>${data.crop.theoreticalYieldTonHa} ton/ha</dd>
+      <article class="info-block crop-block">
+        <div class="info-title-row">
+          <h3>Informacion del cultivo</h3>
+          <span>${escapeHtml(crop.scientificName || "Catalogo")}</span>
+        </div>
+        <dl class="calc-list">
+          <div>
+            <dt>Ciclo de crecimiento</dt>
+            <dd>${formatNumber(crop.growthTimeDays, 0)} dias</dd>
+          </div>
+          <div>
+            <dt>Requerimiento de agua</dt>
+            <dd>${escapeHtml(crop.waterRequirement || "-")}</dd>
+          </div>
+          <div>
+            <dt>Rendimiento teorico</dt>
+            <dd>${formatNumber(crop.theoreticalYieldTonHa, 2)} ton/ha</dd>
+          </div>
         </dl>
+      </article>
+
+      <article class="info-block soil-block">
+        <div class="info-title-row">
+          <h3>Suelo automatico</h3>
+          <span>${escapeHtml(detection?.source || "manual")}</span>
+        </div>
+        <dl class="calc-list">
+          <div>
+            <dt>Tipo de suelo</dt>
+            <dd>${escapeHtml(soil.soilLabel || SOIL_LABELS[soil.soilType] || "-")}</dd>
+          </div>
+          <div>
+            <dt>Fertilidad</dt>
+            <dd>${escapeHtml(FERTILITY_LABELS[soil.fertilityLevel] || soil.fertilityLevel || "-")}</dd>
+          </div>
+          <div>
+            <dt>Confianza</dt>
+            <dd>${escapeHtml(formatPercent(detection?.confidence))}</dd>
+          </div>
+          <div>
+            <dt>Coeficiente suelo (Cf)</dt>
+            <dd>${formatNumber(soil.coefficient, 2)}</dd>
+          </div>
+        </dl>
+        ${detection?.warning ? `<p class="inline-warning">${escapeHtml(detection.warning)}</p>` : ""}
+        <div class="soil-properties">${buildSoilPropertiesHtml(detection?.properties)}</div>
       </article>
 
       <article class="info-block">
@@ -865,11 +1152,11 @@ function renderCropAnalysis(data) {
       </article>
 
       <article class="info-block">
-        <h3>Plan de Riego y Fertilización</h3>
+        <h3>Plan de riego y fertilizacion</h3>
         <dl class="plan-list">
           <dt>Riego</dt>
           <dd id="analysisPlanIrrigation">-</dd>
-          <dt>Fertilización</dt>
+          <dt>Fertilizacion</dt>
           <dd>
             <ul id="analysisFertilization"></ul>
           </dd>
@@ -877,91 +1164,103 @@ function renderCropAnalysis(data) {
       </article>
 
       <article class="info-block">
-        <h3>Cuidados Especiales</h3>
+        <h3>Cuidados especiales</h3>
         <ul id="analysisCare"></ul>
       </article>
 
       <article class="info-block">
-        <h3>Pronóstico 5 días</h3>
+        <h3>Pronostico 5 dias</h3>
         <div class="forecast-list" id="analysisForecast"></div>
       </article>
 
       <article class="info-block">
-        <h3>Datos del Suelo y Ubicación</h3>
+        <h3>Produccion</h3>
         <dl class="calc-list">
           <div>
-            <dt>Tipo de suelo</dt>
-            <dd>${data.soil.soilLabel}</dd>
+            <dt>Rendimiento teorico</dt>
+            <dd>${hasProduction ? `${formatNumber(data.production.theoreticalYieldTonHa, 2)} ton/ha` : "-"}</dd>
           </div>
           <div>
-            <dt>Fertilidad</dt>
-            <dd>${data.soil.fertilityLevel}</dd>
+            <dt>Coeficiente clima (Cc)</dt>
+            <dd>${hasProduction ? formatNumber(data.production.climateCoefficient, 2) : "-"}</dd>
           </div>
+          <div>
+            <dt>Coeficiente suelo (Cf)</dt>
+            <dd>${hasProduction ? `${formatNumber(data.production.soilCoefficient, 2)} (${escapeHtml(soil.fertilityLevel || "-")})` : "-"}</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="info-block location-block">
+        <h3>Ubicacion evaluada</h3>
+        <dl class="calc-list">
           <div>
             <dt>Latitud</dt>
-            <dd>${formatNumber(data.weather.latitude, 4)}</dd>
+            <dd>${formatNumber(weather.latitude, 5)}</dd>
           </div>
           <div>
             <dt>Longitud</dt>
-            <dd>${formatNumber(data.weather.longitude, 4)}</dd>
+            <dd>${formatNumber(weather.longitude, 5)}</dd>
           </div>
           <div>
             <dt>Fuente clima</dt>
-            <dd>${data.weather.source || "-"}</dd>
+            <dd>${escapeHtml(weather.source || "-")}</dd>
           </div>
         </dl>
       </article>
     </section>
   `;
 
-  // Llenar datos
-  document.querySelector("#analysisTemp").textContent = `${formatNumber(data.weather.current.temperature)} °C`;
-  document.querySelector("#analysisTempStatus").textContent = data.analysis.temperatureStatus.status.toUpperCase();
-  
-  document.querySelector("#analysisHumidity").textContent = `${formatNumber(data.weather.current.humidity, 0)}%`;
-  document.querySelector("#analysisHumidityStatus").textContent = data.analysis.humidityStatus.status.toUpperCase();
-  
-  document.querySelector("#analysisRain").textContent = `${formatNumber(data.weather.current.rainProbability, 0)}%`;
-  document.querySelector("#analysisRainStatus").textContent = data.analysis.rainStatus.status.toUpperCase();
-  
-  document.querySelector("#analysisCoef").textContent = productionMetric;
-  document.querySelector("#analysisPlanIrrigation").textContent = data.plan.irrigation;
+  document.querySelector("#analysisPlanIrrigation").textContent = data.plan?.irrigation || "-";
 
-  // Llenar listas
   fillList("analysisList", data.recommendations);
-  
-  const fertList = document.querySelector("#analysisFertilization");
-  fertList.innerHTML = "";
-  data.plan.fertilizationDates.forEach((item) => {
-    const li = document.createElement("li");
-    li.textContent = `${item.date}: ${item.task}`;
-    fertList.appendChild(li);
-  });
 
-  fillList("analysisCare", data.plan.care);
-  
-  // Pronóstico
-  const forecastContainer = document.querySelector("#analysisForecast");
-  forecastContainer.innerHTML = "";
-  if (!data.weather.forecast?.length) {
-    forecastContainer.innerHTML = "<p class='muted'>Pronóstico no disponible.</p>";
-  } else {
-    data.weather.forecast.forEach((day) => {
-      const row = document.createElement("div");
-      row.className = "forecast-day";
-      row.innerHTML = `
-        <strong>${day.date}</strong>
-        <span>${formatNumber(day.temperatureMin)}-${formatNumber(day.temperatureMax)} C - lluvia ${formatNumber(day.rainProbability, 0)}%</span>
-      `;
-      forecastContainer.appendChild(row);
+  const fertList = document.querySelector("#analysisFertilization");
+  if (fertList) {
+    fertList.innerHTML = "";
+
+    (data.plan?.fertilizationDates || []).forEach((item) => {
+      const li = document.createElement("li");
+      li.textContent = `${item.date}: ${item.task}`;
+      fertList.appendChild(li);
     });
   }
 
+  fillList("analysisCare", data.plan?.care);
+
+  renderForecast(data.weather?.forecast, "analysisForecast");
+
   if (data.cropWarning) {
-    showToast(`Usando catálogo local: ${data.cropWarning}`);
+    showToast(`Usando catalogo local: ${data.cropWarning}`);
   }
 
   if (data.weather?.warning) {
     showToast(data.weather.warning);
   }
+}
+
+function renderForecast(forecast, containerId) {
+  const container = document.querySelector(`#${containerId}`);
+
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+
+  if (!forecast?.length) {
+    container.innerHTML = `<p class="muted-line">Pronostico no disponible.</p>`;
+    return;
+  }
+
+  forecast.forEach((day) => {
+    const row = document.createElement("div");
+    row.className = "forecast-day";
+    row.innerHTML = `
+      <span>${escapeHtml(day.date)}</span>
+      <strong>${formatNumber(day.temperatureMin)}-${formatNumber(day.temperatureMax)} °C</strong>
+      <small>Lluvia ${formatNumber(day.rainProbability, 0)}%</small>
+    `;
+    container.appendChild(row);
+  });
 }

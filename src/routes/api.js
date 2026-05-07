@@ -1,9 +1,14 @@
 const express = require("express");
+
 const { getWeather } = require("../services/weatherService");
 const { getCrops } = require("../services/cropService");
 const { reverseGeocode } = require("../services/locationService");
-const { generateRecommendation, analyzeCropConditions } = require("../services/recommendationService");
+const {
+  generateRecommendation,
+  analyzeCropConditions
+} = require("../services/recommendationService");
 const { createAgriculturalReportPdf } = require("../services/pdfService");
+const { detectSoilByLocation } = require("../services/soilDetectionService");
 const { soilProfiles } = require("../utils/soil");
 
 const router = express.Router();
@@ -22,16 +27,20 @@ router.get("/soil-types", (_request, response) => {
   });
 });
 
-router.get("/crops", async (_request, response) => {
-  const result = await getCrops();
-  response.json(result);
+router.get("/crops", async (_request, response, next) => {
+  try {
+    const result = await getCrops();
+    response.json(result);
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.post("/geocode/reverse", async (request, response, next) => {
   try {
     const { latitude, longitude } = request.body;
 
-    if (!latitude || !longitude) {
+    if (isMissing(latitude) || isMissing(longitude)) {
       return response.status(400).json({
         error: "Latitud y longitud son obligatorias."
       });
@@ -44,26 +53,51 @@ router.post("/geocode/reverse", async (request, response, next) => {
   }
 });
 
-router.post("/crop-care", async (request, response, next) => {
+router.post("/soil/detect", async (request, response, next) => {
   try {
-    const { latitude, longitude, cropId, customCrop, soilType, fertilityLevel, landSizeHa } = request.body;
-    
-    // Validación básica de entrada
-    if (!latitude || !longitude || !soilType || !fertilityLevel) {
+    const { latitude, longitude } = request.body;
+
+    if (isMissing(latitude) || isMissing(longitude)) {
       return response.status(400).json({
-        error: "Todos los parametros de ubicacion (latitude, longitude, soilType, fertilityLevel) son obligatorios."
+        error: "Latitud y longitud son obligatorias para detectar el suelo."
       });
     }
 
-    if (!cropId && !customCrop) {
+    const detection = await detectSoilByLocation(latitude, longitude);
+    response.json(detection);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/crop-care", async (request, response, next) => {
+  try {
+    const {
+      latitude,
+      longitude,
+      cropId,
+      customCrop,
+      soilType,
+      fertilityLevel,
+      landSizeHa
+    } = request.body;
+
+    if (isMissing(latitude) || isMissing(longitude)) {
+      return response.status(400).json({
+        error: "Latitud y longitud son obligatorias."
+      });
+    }
+
+    if (!cropId && isMissing(customCrop)) {
       return response.status(400).json({
         error: "Debes proporcionar cropId o escribir un cultivo personalizado (customCrop)."
       });
     }
-    
-    const [weather, cropResult] = await Promise.all([
+
+    const [weather, cropResult, soilSelection] = await Promise.all([
       getWeather(latitude, longitude),
-      getCrops()
+      getCrops(),
+      resolveSoilForRequest({ latitude, longitude, soilType, fertilityLevel })
     ]);
 
     const selectedCrop = resolveSelectedCrop(cropResult.crops, { cropId, customCrop });
@@ -75,12 +109,11 @@ router.post("/crop-care", async (request, response, next) => {
       });
     }
 
-    // Analizar el cultivo en las condiciones locales
     const analysis = analyzeCropConditions({
       crop: selectedCrop,
       weather,
-      soilType,
-      fertilityLevel,
+      soilType: soilSelection.soilType,
+      fertilityLevel: soilSelection.fertilityLevel,
       landSizeHa
     });
 
@@ -88,12 +121,141 @@ router.post("/crop-care", async (request, response, next) => {
       weather,
       cropSource: cropResult.source,
       cropWarning: cropResult.warning || null,
+      soilDetection: soilSelection.soilDetection,
       ...analysis
     });
   } catch (error) {
     next(error);
   }
 });
+
+router.get("/weather", async (request, response, next) => {
+  try {
+    const { latitude, longitude } = request.query;
+
+    if (isMissing(latitude) || isMissing(longitude)) {
+      return response.status(400).json({
+        error: "Latitud y longitud son obligatorias."
+      });
+    }
+
+    const weather = await getWeather(latitude, longitude);
+    response.json(weather);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/recommendations", async (request, response, next) => {
+  try {
+    const { latitude, longitude, soilType, fertilityLevel, landSizeHa } = request.body;
+
+    if (isMissing(latitude) || isMissing(longitude) || isMissing(landSizeHa)) {
+      return response.status(400).json({
+        error: "Latitud, longitud y tamano del terreno son obligatorios."
+      });
+    }
+
+    const [weather, cropResult, soilSelection] = await Promise.all([
+      getWeather(latitude, longitude),
+      getCrops(),
+      resolveSoilForRequest({ latitude, longitude, soilType, fertilityLevel })
+    ]);
+
+    const recommendation = generateRecommendation({
+      crops: cropResult.crops,
+      weather,
+      soilType: soilSelection.soilType,
+      fertilityLevel: soilSelection.fertilityLevel,
+      landSizeHa
+    });
+
+    response.json({
+      weather,
+      cropSource: cropResult.source,
+      cropWarning: cropResult.warning || null,
+      soilDetection: soilSelection.soilDetection,
+      ...recommendation
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/reports/pdf", async (request, response, next) => {
+  try {
+    const {
+      latitude,
+      longitude,
+      soilType,
+      fertilityLevel,
+      landSizeHa,
+      cropId,
+      customCrop
+    } = request.body;
+
+    if (isMissing(latitude) || isMissing(longitude) || isMissing(landSizeHa)) {
+      return response.status(400).json({
+        error: "Latitud, longitud y tamano del terreno son obligatorios."
+      });
+    }
+
+    const [weather, cropResult, soilSelection] = await Promise.all([
+      getWeather(latitude, longitude),
+      getCrops(),
+      resolveSoilForRequest({ latitude, longitude, soilType, fertilityLevel })
+    ]);
+
+    const selectedCrop = resolveSelectedCrop(cropResult.crops, { cropId, customCrop });
+
+    if ((cropId || customCrop) && !selectedCrop) {
+      const cropLabel = cropId ? `ID '${cropId}'` : `'${customCrop}'`;
+      return response.status(404).json({
+        error: `No se encontro informacion para el cultivo ${cropLabel}.`
+      });
+    }
+
+    const recommendation = selectedCrop
+      ? {
+          reportMode: "selected",
+          ...analyzeCropConditions({
+            crop: selectedCrop,
+            weather,
+            soilType: soilSelection.soilType,
+            fertilityLevel: soilSelection.fertilityLevel,
+            landSizeHa
+          })
+        }
+      : generateRecommendation({
+          crops: cropResult.crops,
+          weather,
+          soilType: soilSelection.soilType,
+          fertilityLevel: soilSelection.fertilityLevel,
+          landSizeHa
+        });
+
+    const reportData = {
+      weather,
+      cropSource: cropResult.source,
+      cropWarning: cropResult.warning || null,
+      soilDetection: soilSelection.soilDetection,
+      ...recommendation
+    };
+
+    response.setHeader("Content-Type", "application/pdf");
+    response.setHeader("Content-Disposition", 'attachment; filename="reporte-pda.pdf"');
+
+    const pdf = createAgriculturalReportPdf(reportData);
+    pdf.pipe(response);
+    pdf.end();
+  } catch (error) {
+    next(error);
+  }
+});
+
+function isMissing(value) {
+  return value === undefined || value === null || String(value).trim() === "";
+}
 
 function normalizeText(value) {
   return String(value || "")
@@ -103,6 +265,40 @@ function normalizeText(value) {
     .replace(/[_-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function wantsAutomaticSoil(soilType, fertilityLevel) {
+  return (
+    isMissing(soilType) ||
+    isMissing(fertilityLevel) ||
+    normalizeText(soilType) === "auto" ||
+    normalizeText(fertilityLevel) === "auto"
+  );
+}
+
+async function resolveSoilForRequest({ latitude, longitude, soilType, fertilityLevel }) {
+  if (wantsAutomaticSoil(soilType, fertilityLevel)) {
+    const detection = await detectSoilByLocation(latitude, longitude);
+
+    return {
+      soilType: detection.soilType,
+      fertilityLevel: detection.fertilityLevel,
+      soilDetection: detection
+    };
+  }
+
+  return {
+    soilType,
+    fertilityLevel,
+    soilDetection: {
+      soilType,
+      fertilityLevel,
+      confidence: 1,
+      source: "manual",
+      warning: null,
+      properties: null
+    }
+  };
 }
 
 function getCropSearchValues(crop) {
@@ -124,6 +320,7 @@ function findCropById(crops, cropId) {
 
 function findCropByName(crops, cropName) {
   const normalizedName = normalizeText(cropName);
+
   if (!normalizedName) {
     return null;
   }
@@ -137,6 +334,7 @@ function findCropByName(crops, cropName) {
 function resolveSelectedCrop(crops, { cropId, customCrop }) {
   if (cropId) {
     const crop = findCropById(crops, cropId);
+
     if (crop) {
       return crop;
     }
@@ -149,11 +347,6 @@ function resolveSelectedCrop(crops, { cropId, customCrop }) {
   return null;
 }
 
-/**
- * Crea un cultivo generico cuando el usuario escribe un cultivo personalizado
- * @param {string} cropName - Nombre del cultivo
- * @returns {object} Cultivo generico con condiciones por defecto
- */
 function createGenericCrop(cropName) {
   return {
     id: `custom-${Date.now()}`,
@@ -171,123 +364,10 @@ function createGenericCrop(cropName) {
     theoreticalYieldTonHa: 5,
     care: [
       "Mantener humedad consistente del suelo.",
-      "Proporcionar riego regular según clima.",
+      "Proporcionar riego regular segun clima.",
       "Monitorear plagas y enfermedades."
     ]
   };
 }
-
-router.get("/weather", async (request, response, next) => {
-  try {
-    const { latitude, longitude } = request.query;
-    
-    if (!latitude || !longitude) {
-      return response.status(400).json({
-        error: "Latitud y longitud son obligatorias."
-      });
-    }
-    
-    const weather = await getWeather(latitude, longitude);
-    response.json(weather);
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.post("/recommendations", async (request, response, next) => {
-  try {
-    const { latitude, longitude, soilType, fertilityLevel, landSizeHa } = request.body;
-    
-    // Validacion basica de entrada
-    if (!latitude || !longitude || !soilType || !fertilityLevel || !landSizeHa) {
-      return response.status(400).json({
-        error: "Todos los parametros (latitude, longitude, soilType, fertilityLevel, landSizeHa) son obligatorios."
-      });
-    }
-    
-    const [weather, cropResult] = await Promise.all([
-      getWeather(latitude, longitude),
-      getCrops()
-    ]);
-
-    const recommendation = generateRecommendation({
-      crops: cropResult.crops,
-      weather,
-      soilType,
-      fertilityLevel,
-      landSizeHa
-    });
-
-    response.json({
-      weather,
-      cropSource: cropResult.source,
-      cropWarning: cropResult.warning || null,
-      ...recommendation
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.post("/reports/pdf", async (request, response, next) => {
-  try {
-    const { latitude, longitude, soilType, fertilityLevel, landSizeHa, cropId, customCrop } = request.body;
-    
-    // Validacion basica de entrada
-    if (!latitude || !longitude || !soilType || !fertilityLevel || !landSizeHa) {
-      return response.status(400).json({
-        error: "Todos los parametros (latitude, longitude, soilType, fertilityLevel, landSizeHa) son obligatorios."
-      });
-    }
-    
-    const [weather, cropResult] = await Promise.all([
-      getWeather(latitude, longitude),
-      getCrops()
-    ]);
-
-    const selectedCrop = resolveSelectedCrop(cropResult.crops, { cropId, customCrop });
-    if ((cropId || customCrop) && !selectedCrop) {
-      const cropLabel = cropId ? `ID '${cropId}'` : `'${customCrop}'`;
-      return response.status(404).json({
-        error: `No se encontro informacion para el cultivo ${cropLabel}.`
-      });
-    }
-
-    const recommendation = selectedCrop
-      ? {
-          reportMode: "selected",
-          ...analyzeCropConditions({
-            crop: selectedCrop,
-            weather,
-            soilType,
-            fertilityLevel,
-            landSizeHa
-          })
-        }
-      : generateRecommendation({
-          crops: cropResult.crops,
-          weather,
-          soilType,
-          fertilityLevel,
-          landSizeHa
-        });
-
-    const reportData = {
-      weather,
-      cropSource: cropResult.source,
-      cropWarning: cropResult.warning || null,
-      ...recommendation
-    };
-
-    response.setHeader("Content-Type", "application/pdf");
-    response.setHeader("Content-Disposition", 'attachment; filename="reporte-pda.pdf"');
-
-    const pdf = createAgriculturalReportPdf(reportData);
-    pdf.pipe(response);
-    pdf.end();
-  } catch (error) {
-    next(error);
-  }
-});
 
 module.exports = router;

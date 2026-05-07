@@ -4,26 +4,40 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PDA | Plataforma de Desarrollo Agricola</title>
+    <meta
+      name="description"
+      content="Dashboard agricola para diagnosticar parcelas con clima, cultivo, produccion y deteccion automatica de suelo."
+    >
     <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+    >
   </head>
+
   <body>
     <header class="topbar">
       <div class="brand-lockup">
         <span class="brand-mark" aria-hidden="true">PDA</span>
         <div>
           <p class="eyebrow">Plataforma de Desarrollo Agricola</p>
-          <h1>PDA</h1>
+          <h1>CODE TEC</h1>
         </div>
       </div>
-      <p class="status-pill" id="connectionStatus">Listo</p>
+
+      <div class="topbar-actions">
+        <p class="status-pill" id="connectionStatus">Listo</p>
+      </div>
     </header>
 
     <main class="app-shell">
       <section class="input-panel" aria-labelledby="formTitle">
-        <div class="section-heading">
+        <div class="section-heading hero-card">
           <p class="eyebrow">Diagnostico de parcela</p>
-          <h2 id="formTitle">Plan agricola personalizado</h2>
+          <h2 id="formTitle">Plan agricola inteligente</h2>
+          <p>
+            Selecciona la ubicacion, detecta automaticamente el tipo de suelo y genera un plan de cultivo con clima, riego, fertilizacion y produccion estimada.
+          </p>
         </div>
 
         <form id="mainForm">
@@ -35,6 +49,7 @@
               </div>
               <span class="section-chip">Mapa activo</span>
             </div>
+
             <div class="location-row">
               <button class="secondary-button" type="button" id="locationButton">
                 <span aria-hidden="true">GPS</span>
@@ -42,7 +57,9 @@
               </button>
               <div class="coords" id="coordsText">Sin ubicacion</div>
             </div>
+
             <div class="address" id="addressText">Ubicacion aproximada: -</div>
+
             <div id="mapContainer" class="map-shell" aria-label="Mapa de ubicacion">
               <div id="miniMap" class="map-canvas" aria-label="Mapa con tu ubicacion seleccionada"></div>
               <div class="map-overlay" id="mapOverlay">
@@ -57,6 +74,41 @@
                 <p class="section-kicker">Parametros</p>
                 <h3>Suelo y cultivo</h3>
               </div>
+              <span class="section-chip muted">SoilGrids + respaldo local</span>
+            </div>
+
+            <div class="soil-auto-card">
+              <div class="soil-auto-header">
+                <div>
+                  <p class="section-kicker">Tipo de suelo automatico</p>
+                  <h4 id="soilAutoStatus" class="soil-status is-warning">Esperando coordenadas</h4>
+                </div>
+                <button class="ghost-button" type="button" id="detectSoilButton">Detectar suelo</button>
+              </div>
+
+              <div class="soil-auto-grid" aria-label="Resumen de suelo detectado">
+                <div>
+                  <span>Fuente</span>
+                  <strong id="soilAutoSource">-</strong>
+                </div>
+                <div>
+                  <span>Textura</span>
+                  <strong id="soilAutoTexture">-</strong>
+                </div>
+                <div>
+                  <span>Fertilidad</span>
+                  <strong id="soilAutoFertility">-</strong>
+                </div>
+                <div>
+                  <span>Confianza</span>
+                  <strong id="soilAutoConfidence">-</strong>
+                </div>
+              </div>
+
+              <div class="soil-properties compact" id="soilAutoProperties"></div>
+              <p class="field-hint" id="soilAutoHint">
+                Usa GPS, escribe coordenadas o toca el mapa para detectar el suelo automaticamente.
+              </p>
             </div>
 
             <div class="form-grid">
@@ -64,31 +116,38 @@
                 Latitud
                 <input id="latitude" name="latitude" type="number" step="any" placeholder="19.4326" required>
               </label>
+
               <label>
                 Longitud
                 <input id="longitude" name="longitude" type="number" step="any" placeholder="-99.1332" required>
               </label>
+
               <label>
                 Tipo de suelo
                 <select id="soilType" name="soilType" required>
+                  <option value="auto" selected>Automatico con coordenadas</option>
                   <option value="franco">Franco</option>
                   <option value="arenoso">Arenoso</option>
                   <option value="arcilloso">Arcilloso</option>
                   <option value="limoso">Limoso</option>
                 </select>
               </label>
+
               <label>
                 Fertilidad
                 <select id="fertilityLevel" name="fertilityLevel" required>
+                  <option value="auto" selected>Automatica</option>
                   <option value="bueno">Bueno (Cf 0.9)</option>
                   <option value="medio">Medio (Cf 0.7)</option>
                   <option value="pobre">Pobre (Cf 0.5)</option>
                 </select>
               </label>
+
               <label class="wide">
                 Tamano del terreno en hectareas
                 <input id="landSizeHa" name="landSizeHa" type="number" min="0.01" step="0.01" value="1" required>
               </label>
+
               <label class="wide crop-field">
                 Cultivo
                 <div class="crop-search">
@@ -101,7 +160,9 @@
                     aria-controls="cropDropdown"
                     aria-expanded="false"
                   >
-                  <button class="crop-clear-button hidden" type="button" id="cropClearButton" aria-label="Limpiar cultivo">x</button>
+                  <button class="crop-clear-button hidden" type="button" id="cropClearButton" aria-label="Limpiar cultivo">
+                    x
+                  </button>
                   <div id="cropDropdown" class="crop-dropdown hidden" role="listbox"></div>
                 </div>
                 <small class="field-hint" id="cropSearchHelp">Cargando catalogo de cultivos...</small>
@@ -112,12 +173,8 @@
           </section>
 
           <div class="action-row">
-            <button class="primary-button" type="submit">
-              Generar plan agricola
-            </button>
-            <button class="secondary-button hidden" type="button" id="pdfButton">
-              Descargar PDF
-            </button>
+            <button class="primary-button" type="submit">Generar plan agricola</button>
+            <button class="secondary-button hidden" type="button" id="pdfButton">Descargar PDF</button>
           </div>
         </form>
       </section>
@@ -129,8 +186,13 @@
             <span></span>
             <span></span>
           </div>
-          <p class="eyebrow">Analisis</p>
+
+          <p class="eyebrow">Dashboard agricola</p>
           <h2>Panel listo para diagnosticar la parcela.</h2>
+          <p>
+            Cuando generes el plan veras clima, suelo automatico, cultivo, recomendaciones, pronostico y produccion estimada.
+          </p>
+
           <div class="empty-metrics" aria-hidden="true">
             <span>Clima</span>
             <span>Suelo</span>
@@ -139,84 +201,12 @@
           </div>
         </div>
 
-        <div class="results hidden" id="results">
-          <section class="summary-band">
-            <div>
-              <p class="eyebrow">Cultivo recomendado</p>
-              <h2 id="cropName">-</h2>
-              <p id="cropMeta">-</p>
-            </div>
-            <div class="production-number">
-              <span id="productionTotal">0</span>
-              <small>ton estimadas</small>
-            </div>
-          </section>
-
-          <div class="dashboard-grid">
-            <article class="metric-card">
-              <p>Temperatura</p>
-              <strong id="temperature">-</strong>
-            </article>
-            <article class="metric-card">
-              <p>Humedad</p>
-              <strong id="humidity">-</strong>
-            </article>
-            <article class="metric-card">
-              <p>Lluvia</p>
-              <strong id="rainProbability">-</strong>
-            </article>
-            <article class="metric-card">
-              <p>Condicion</p>
-              <strong id="climateLabel">-</strong>
-            </article>
-          </div>
-
-          <section class="content-grid">
-            <article class="info-block">
-              <h3>Recomendaciones</h3>
-              <ul id="recommendations"></ul>
-            </article>
-
-            <article class="info-block">
-              <h3>Plan agricola</h3>
-              <dl class="plan-list">
-                <dt>Riego</dt>
-                <dd id="irrigationPlan">-</dd>
-                <dt>Fertilizacion</dt>
-                <dd>
-                  <ul id="fertilizationDates"></ul>
-                </dd>
-              </dl>
-            </article>
-
-            <article class="info-block">
-              <h3>Pronostico</h3>
-              <div class="forecast-list" id="forecastList"></div>
-            </article>
-
-            <article class="info-block">
-              <h3>Produccion</h3>
-              <dl class="calc-list">
-                <div>
-                  <dt>Rendimiento teorico</dt>
-                  <dd id="yieldValue">-</dd>
-                </div>
-                <div>
-                  <dt>Coeficiente clima (Cc)</dt>
-                  <dd id="ccValue">-</dd>
-                </div>
-                <div>
-                  <dt>Coeficiente suelo (Cf)</dt>
-                  <dd id="cfValue">-</dd>
-                </div>
-              </dl>
-            </article>
-          </section>
-        </div>
+        <div class="results hidden" id="results"></div>
       </section>
     </main>
 
     <div class="toast hidden" id="toast" role="alert"></div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="/app.js"></script>
   </body>
