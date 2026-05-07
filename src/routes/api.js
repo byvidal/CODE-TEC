@@ -9,6 +9,13 @@ const {
 } = require("../services/recommendationService");
 const { createAgriculturalReportPdf } = require("../services/pdfService");
 const { detectSoilByLocation } = require("../services/soilDetectionService");
+const {
+  assertCanConsult,
+  getClientMembership,
+  getPublicPlans,
+  recordConsultation,
+  subscribeClient
+} = require("../services/businessModelService");
 const { soilProfiles } = require("../utils/soil");
 
 const router = express.Router();
@@ -19,6 +26,41 @@ router.get("/health", (_request, response) => {
     app: "PDA",
     timestamp: new Date().toISOString()
   });
+});
+
+router.get("/billing/plans", (_request, response) => {
+  response.json({
+    plans: getPublicPlans()
+  });
+});
+
+router.get("/billing/status", (request, response) => {
+  response.json({
+    membership: getClientMembership(getClientId(request)),
+    plans: getPublicPlans()
+  });
+});
+
+router.post("/billing/subscribe", (request, response, next) => {
+  try {
+    const membership = subscribeClient({
+      clientId: getClientId(request),
+      planId: request.body.planId,
+      cardholderName: request.body.cardholderName,
+      cardNumber: request.body.cardNumber,
+      cardExpiry: request.body.cardExpiry,
+      cardCvc: request.body.cardCvc,
+      whatsappNumber: request.body.whatsappNumber,
+      notificationPreferences: request.body.notificationPreferences
+    });
+
+    response.json({
+      membership,
+      plans: getPublicPlans()
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.get("/soil-types", (_request, response) => {
@@ -94,6 +136,9 @@ router.post("/crop-care", async (request, response, next) => {
       });
     }
 
+    const clientId = getClientId(request);
+    assertCanConsult(clientId);
+
     const [weather, cropResult, soilSelection] = await Promise.all([
       getWeather(latitude, longitude),
       getCrops(),
@@ -117,11 +162,14 @@ router.post("/crop-care", async (request, response, next) => {
       landSizeHa
     });
 
+    const membership = recordConsultation(clientId);
+
     response.json({
       weather,
       cropSource: cropResult.source,
       cropWarning: cropResult.warning || null,
       soilDetection: soilSelection.soilDetection,
+      membership,
       ...analysis
     });
   } catch (error) {
@@ -156,6 +204,9 @@ router.post("/recommendations", async (request, response, next) => {
       });
     }
 
+    const clientId = getClientId(request);
+    assertCanConsult(clientId);
+
     const [weather, cropResult, soilSelection] = await Promise.all([
       getWeather(latitude, longitude),
       getCrops(),
@@ -170,11 +221,14 @@ router.post("/recommendations", async (request, response, next) => {
       landSizeHa
     });
 
+    const membership = recordConsultation(clientId);
+
     response.json({
       weather,
       cropSource: cropResult.source,
       cropWarning: cropResult.warning || null,
       soilDetection: soilSelection.soilDetection,
+      membership,
       ...recommendation
     });
   } catch (error) {
@@ -199,6 +253,8 @@ router.post("/reports/pdf", async (request, response, next) => {
         error: "Latitud, longitud y tamano del terreno son obligatorios."
       });
     }
+
+    const clientId = getClientId(request);
 
     const [weather, cropResult, soilSelection] = await Promise.all([
       getWeather(latitude, longitude),
@@ -239,6 +295,7 @@ router.post("/reports/pdf", async (request, response, next) => {
       cropSource: cropResult.source,
       cropWarning: cropResult.warning || null,
       soilDetection: soilSelection.soilDetection,
+      membership: getClientMembership(clientId),
       ...recommendation
     };
 
@@ -255,6 +312,16 @@ router.post("/reports/pdf", async (request, response, next) => {
 
 function isMissing(value) {
   return value === undefined || value === null || String(value).trim() === "";
+}
+
+function getClientId(request) {
+  return (
+    request.get("x-pda-client-id") ||
+    request.body?.clientId ||
+    request.query?.clientId ||
+    request.ip ||
+    "anonymous"
+  );
 }
 
 function normalizeText(value) {

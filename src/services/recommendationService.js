@@ -128,15 +128,6 @@ function addDays(date, days) {
 }
 
 
-const MEMBERSHIP_PLAN = {
-  name: "Membresia PDA Alerta Campo",
-  monthlyCostMXN: 79,
-  currency: "MXN",
-  billingLabel: "$79 MXN/mes",
-  paymentMethod: "Tarjeta bancaria (simulacion)",
-  status: "Simulada - lista para activar"
-};
-
 function normalizeLandSize(landSizeHa) {
   const value = Number(landSizeHa);
   return Number.isFinite(value) && value > 0 ? value : 1;
@@ -179,18 +170,6 @@ function getIrrigationWindow(weather) {
   return "06:00-08:00";
 }
 
-function buildMembershipPlan() {
-  return {
-    ...MEMBERSHIP_PLAN,
-    features: [
-      "Recordatorios de riego y fertilizacion",
-      "Alertas de lluvia, calor, frio y baja humedad",
-      "Ajuste de agua sugerida segun pronostico",
-      "Monitoreo preventivo de plagas y enfermedades"
-    ]
-  };
-}
-
 function buildMembershipNotifications({
   crop,
   weather,
@@ -221,7 +200,7 @@ function buildMembershipNotifications({
   const rainyDay = weather.forecast?.find((day) => Number(day.rainProbability) >= 70);
   if (rainyDay) {
     notifications.push({
-      type: "clima",
+      type: "lluvia",
       priority: "alta",
       title: "Lluvia en pronostico",
       message: `Se espera lluvia alta el ${rainyDay.date} (${rainyDay.rainProbability}%). Reduce riego y evita fertilizar antes de la lluvia.`
@@ -317,7 +296,6 @@ function buildAgriculturalPlan(crop, weather, landSizeHa = 1) {
     },
     fertilizationDates,
     care: crop.care,
-    membership: buildMembershipPlan(),
     notifications: buildMembershipNotifications({
       crop,
       weather,

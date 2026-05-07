@@ -1334,3 +1334,226 @@ select:hover {
 .payment-simulation small {
   color: #637168;
 }
+
+.membership-pill {
+  border-color: rgba(35, 121, 155, 0.22);
+  color: var(--water);
+}
+
+.membership-pill::before {
+  background: var(--water);
+  box-shadow: 0 0 0 5px rgba(35, 121, 155, 0.14);
+}
+
+.membership-panel {
+  display: grid;
+  gap: 15px;
+  padding: 22px;
+  border-bottom: 1px solid rgba(188, 208, 195, 0.58);
+  background:
+    linear-gradient(135deg, rgba(35, 121, 155, 0.08), rgba(215, 154, 45, 0.08)),
+    rgba(255, 255, 255, 0.54);
+}
+
+.membership-panel h3,
+.membership-panel h4,
+.plan-card h4 {
+  margin: 0;
+}
+
+.usage-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(142, 174, 153, 0.72);
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.usage-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 820;
+}
+
+.usage-card strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink);
+  font-size: 1.05rem;
+}
+
+.usage-meter {
+  overflow: hidden;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(16, 32, 25, 0.08);
+}
+
+.usage-meter span {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--field), var(--water));
+  transition: width 220ms ease, background 220ms ease;
+}
+
+.usage-meter span.is-full {
+  background: linear-gradient(90deg, var(--warning), var(--danger));
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.plan-card {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+  border: 1px solid rgba(188, 208, 195, 0.74);
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.plan-card.is-active {
+  border-color: rgba(31, 122, 79, 0.42);
+  box-shadow: inset 0 0 0 1px rgba(31, 122, 79, 0.14);
+}
+
+.plan-card-header {
+  display: grid;
+  gap: 7px;
+}
+
+.plan-card-header p,
+.plan-card ul,
+.plan-action {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.plan-card-header strong {
+  color: var(--field-dark);
+  font-size: 1.02rem;
+}
+
+.plan-card ul {
+  display: grid;
+  gap: 6px;
+  padding-left: 16px;
+}
+
+.plan-button,
+.plan-action {
+  align-self: end;
+}
+
+.plan-action {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  font-weight: 900;
+}
+
+.billing-panel {
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(35, 121, 155, 0.2);
+  border-radius: 20px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--shadow-sm);
+}
+
+.billing-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.billing-form-grid {
+  gap: 12px;
+}
+
+.notification-picker {
+  display: grid;
+  gap: 9px;
+}
+
+#notificationOptions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.notification-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 9px;
+  border: 1px solid rgba(188, 208, 195, 0.78);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(244, 249, 243, 0.74);
+}
+
+.notification-option input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  padding: 0;
+  box-shadow: none;
+  accent-color: var(--field);
+}
+
+.notification-option strong,
+.notification-option small {
+  display: block;
+}
+
+.notification-option small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.whatsapp-block .notification-list {
+  margin-bottom: 0;
+}
+
+.whatsapp-block .muted-line {
+  margin: 12px 0 0;
+  line-height: 1.45;
+}
+
+@media (max-width: 980px) {
+  .plan-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .topbar-actions,
+  .billing-panel-header {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .membership-panel {
+    padding: 16px;
+  }
+
+  #notificationOptions {
+    grid-template-columns: 1fr;
+  }
+}

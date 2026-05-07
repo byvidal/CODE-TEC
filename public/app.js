@@ -3,6 +3,7 @@ const locationButton = document.querySelector("#locationButton");
 const detectSoilButton = document.querySelector("#detectSoilButton");
 const coordsText = document.querySelector("#coordsText");
 const statusText = document.querySelector("#connectionStatus");
+const membershipStatusText = document.querySelector("#membershipStatus");
 const toast = document.querySelector("#toast");
 const emptyState = document.querySelector("#emptyState");
 const results = document.querySelector("#results");
@@ -16,6 +17,22 @@ const pdfButton = document.querySelector("#pdfButton");
 const miniMapDiv = document.querySelector("#miniMap");
 const mapOverlay = document.querySelector("#mapOverlay");
 const addressText = document.querySelector("#addressText");
+const membershipPlanChip = document.querySelector("#membershipPlanChip");
+const membershipUsageText = document.querySelector("#membershipUsageText");
+const membershipPlanName = document.querySelector("#membershipPlanName");
+const membershipUsageBar = document.querySelector("#membershipUsageBar");
+const planGrid = document.querySelector("#planGrid");
+const billingPanel = document.querySelector("#billingPanel");
+const billingPlanTitle = document.querySelector("#billingPlanTitle");
+const cancelBillingButton = document.querySelector("#cancelBillingButton");
+const whatsappNumber = document.querySelector("#whatsappNumber");
+const cardholderName = document.querySelector("#cardholderName");
+const cardNumber = document.querySelector("#cardNumber");
+const cardExpiry = document.querySelector("#cardExpiry");
+const cardCvc = document.querySelector("#cardCvc");
+const notificationPicker = document.querySelector("#notificationPicker");
+const notificationOptions = document.querySelector("#notificationOptions");
+const payButton = document.querySelector("#payButton");
 
 const fields = {
   latitude: document.querySelector("#latitude"),
@@ -40,6 +57,10 @@ let lastReportRequest = null;
 let lastSoilDetection = null;
 let soilAutoMode = true;
 let isApplyingSoilSuggestion = false;
+let clientId = null;
+let membershipState = null;
+let availablePlans = [];
+let selectedBillingPlanId = null;
 
 let map = null;
 let mapMarker = null;
@@ -56,6 +77,9 @@ const MANUAL_INPUT_DEBOUNCE_MS = 500;
 const SOIL_DETECTION_DEBOUNCE_MS = 750;
 const REVERSE_GEOCODE_ENDPOINT = "/api/geocode/reverse";
 const SOIL_DETECTION_ENDPOINT = "/api/soil/detect";
+const BILLING_STATUS_ENDPOINT = "/api/billing/status";
+const BILLING_SUBSCRIBE_ENDPOINT = "/api/billing/subscribe";
+const CLIENT_ID_STORAGE_KEY = "pda-client-id";
 const LOCATION_BUTTON_LABEL = "Usar ubicacion actual";
 const LOCATION_BUTTON_LOADING_LABEL = "Localizando...";
 const GEOLOCATION_TIMEOUT_MS = 15000;
@@ -77,6 +101,8 @@ const FERTILITY_LABELS = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+  initializeClientId();
+  loadMembershipStatus();
   loadAndSetupCrops();
   initializeMap();
   updateCropClearButton();
@@ -97,6 +123,284 @@ function showToast(message) {
   window.clearTimeout(showToast.timeoutId);
   showToast.timeoutId = window.setTimeout(() => toast.classList.add("hidden"), 5400);
 }
+
+function initializeClientId() {
+  try {
+    clientId = window.localStorage.getItem(CLIENT_ID_STORAGE_KEY);
+
+    if (!clientId) {
+      clientId =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `pda_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      window.localStorage.setItem(CLIENT_ID_STORAGE_KEY, clientId);
+    }
+  } catch (_error) {
+    clientId = `pda_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  return clientId;
+}
+
+function getClientId() {
+  return clientId || initializeClientId();
+}
+
+function getJsonHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "x-pda-client-id": getClientId()
+  };
+}
+
+async function loadMembershipStatus() {
+  try {
+    const response = await fetch(`${BILLING_STATUS_ENDPOINT}?clientId=${encodeURIComponent(getClientId())}`, {
+      headers: {
+        "x-pda-client-id": getClientId()
+      }
+    });
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload.error || "No se pudo cargar la membresia.");
+    }
+
+    renderMembership(payload);
+  } catch (error) {
+    console.error("Error al cargar membresia:", error);
+    renderMembership({
+      membership: {
+        activePlan: {
+          id: "free",
+          name: "Consulta gratis",
+          queryLimit: 1,
+          queryLimitLabel: "1 consulta gratis"
+        },
+        usage: {
+          used: 0,
+          limit: 1,
+          remaining: 1,
+          label: "0/1 consultas"
+        }
+      },
+      plans: []
+    });
+  }
+}
+
+function renderMembership(payload) {
+  membershipState = payload.membership || membershipState;
+  availablePlans = payload.plans || availablePlans;
+
+  const plan = membershipState?.activePlan || {};
+  const usage = membershipState?.usage || {};
+  const isUnlimited = usage.limit === null;
+  const used = Number(usage.used || 0);
+  const limit = Number(usage.limit || 0);
+  const usagePercent = isUnlimited ? 100 : limit > 0 ? Math.min((used / limit) * 100, 100) : 0;
+  const planShortName = plan.id === "free" ? "Gratis" : plan.name || "Plan";
+
+  if (membershipStatusText) {
+    membershipStatusText.textContent = planShortName;
+  }
+
+  if (membershipPlanChip) {
+    membershipPlanChip.textContent = plan.queryLimitLabel || "Consultas";
+  }
+
+  if (membershipPlanName) {
+    membershipPlanName.textContent = plan.name || "Consulta gratis";
+  }
+
+  if (membershipUsageText) {
+    membershipUsageText.textContent = isUnlimited
+      ? `${used} consultas usadas este mes`
+      : usage.label || `${used}/${limit} consultas`;
+  }
+
+  if (membershipUsageBar) {
+    membershipUsageBar.style.width = `${usagePercent}%`;
+    membershipUsageBar.classList.toggle("is-full", !isUnlimited && usage.remaining === 0);
+  }
+
+  renderPlanCards();
+}
+
+function renderPlanCards() {
+  if (!planGrid) return;
+
+  if (!availablePlans.length) {
+    planGrid.innerHTML = `<p class="muted-line">Planes no disponibles por ahora.</p>`;
+    return;
+  }
+
+  planGrid.innerHTML = availablePlans
+    .map((plan) => {
+      const isActive = membershipState?.activePlan?.id === plan.id;
+      const featureList = (plan.benefits || [])
+        .map((benefit) => `<li>${escapeHtml(benefit)}</li>`)
+        .join("");
+      const action = plan.id === "free"
+        ? `<span class="plan-action muted">Incluido</span>`
+        : `<button class="secondary-button plan-button" type="button" data-plan-id="${escapeHtml(plan.id)}">${
+            isActive ? "Actualizar" : `Comprar ${escapeHtml(plan.name.replace("PDA ", ""))}`
+          }</button>`;
+      const planClass = isActive ? "plan-card is-active" : "plan-card";
+
+      return `
+        <article class="${planClass}">
+          <div class="plan-card-header">
+            <div>
+              <h4>${escapeHtml(plan.name)}</h4>
+              <p>${escapeHtml(plan.queryLimitLabel)}</p>
+            </div>
+            <strong>${escapeHtml(plan.billingLabel)}</strong>
+          </div>
+          <ul>${featureList}</ul>
+          ${action}
+        </article>
+      `;
+    })
+    .join("");
+
+  planGrid.querySelectorAll("[data-plan-id]").forEach((button) => {
+    button.addEventListener("click", () => openBillingPanel(button.dataset.planId));
+  });
+}
+
+function openBillingPanel(planId) {
+  const plan = availablePlans.find((item) => item.id === planId);
+
+  if (!plan || plan.id === "free") {
+    return;
+  }
+
+  selectedBillingPlanId = plan.id;
+  billingPanel?.classList.remove("hidden");
+
+  if (billingPlanTitle) {
+    billingPlanTitle.textContent = `${plan.name} - ${plan.billingLabel}`;
+  }
+
+  if (whatsappNumber && membershipState?.whatsappNumber) {
+    whatsappNumber.value = membershipState.whatsappNumber;
+  }
+
+  renderNotificationPicker(plan);
+
+  if (payButton) {
+    payButton.textContent = `Activar ${plan.name}`;
+  }
+
+  billingPanel?.scrollIntoView({
+    block: "nearest",
+    behavior: "smooth"
+  });
+}
+
+function renderNotificationPicker(plan) {
+  if (!notificationPicker || !notificationOptions) return;
+
+  notificationPicker.classList.toggle("hidden", !plan.canChooseNotifications);
+  notificationOptions.innerHTML = "";
+
+  if (!plan.canChooseNotifications) {
+    return;
+  }
+
+  const selected = new Set(
+    membershipState?.notificationPreferences?.length
+      ? membershipState.notificationPreferences
+      : plan.defaultNotificationTypes || []
+  );
+
+  notificationOptions.innerHTML = (plan.notificationTypes || [])
+    .map(
+      (item) => `
+        <label class="notification-option">
+          <input type="checkbox" value="${escapeHtml(item.id)}" ${selected.has(item.id) ? "checked" : ""}>
+          <span>
+            <strong>${escapeHtml(item.label)}</strong>
+            <small>${escapeHtml(item.description)}</small>
+          </span>
+        </label>
+      `
+    )
+    .join("");
+}
+
+function getSelectedNotificationPreferences() {
+  return Array.from(notificationOptions?.querySelectorAll("input:checked") || []).map(
+    (input) => input.value
+  );
+}
+
+function hideBillingPanel() {
+  billingPanel?.classList.add("hidden");
+  selectedBillingPlanId = null;
+}
+
+function handleSubscriptionBlock(payload) {
+  if (payload.membership || payload.plans) {
+    renderMembership(payload);
+  }
+
+  const targetPlanId = payload.code === "PLUS_LIMIT_REACHED" ? "pro" : "plus";
+  openBillingPanel(targetPlanId);
+}
+
+cancelBillingButton?.addEventListener("click", hideBillingPanel);
+
+payButton?.addEventListener("click", async () => {
+  const plan = availablePlans.find((item) => item.id === selectedBillingPlanId);
+
+  if (!plan) {
+    showToast("Selecciona un plan Plus o Pro.");
+    return;
+  }
+
+  payButton.disabled = true;
+  payButton.textContent = "Validando tarjeta...";
+  setStatus("Pago");
+
+  try {
+    const response = await fetch(BILLING_SUBSCRIBE_ENDPOINT, {
+      method: "POST",
+      headers: getJsonHeaders(),
+      body: JSON.stringify({
+        clientId: getClientId(),
+        planId: plan.id,
+        whatsappNumber: whatsappNumber?.value,
+        cardholderName: cardholderName?.value,
+        cardNumber: cardNumber?.value,
+        cardExpiry: cardExpiry?.value,
+        cardCvc: cardCvc?.value,
+        notificationPreferences: getSelectedNotificationPreferences()
+      })
+    });
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload.error || "No se pudo activar la suscripcion.");
+    }
+
+    renderMembership(payload);
+    hideBillingPanel();
+
+    if (cardNumber) cardNumber.value = "";
+    if (cardExpiry) cardExpiry.value = "";
+    if (cardCvc) cardCvc.value = "";
+
+    showToast(`${payload.membership.activePlan.name} activo. Ya puedes seguir consultando.`);
+  } catch (error) {
+    showToast(error.message || "No se pudo procesar el pago.");
+  } finally {
+    payButton.disabled = false;
+    payButton.textContent = plan ? `Activar ${plan.name}` : "Activar suscripcion";
+    setStatus("Listo");
+  }
+});
 
 function setLoading(isLoading) {
   const submitButton = mainForm?.querySelector("button[type='submit']");
@@ -912,6 +1216,7 @@ mainForm?.addEventListener("submit", async (event) => {
 
   try {
     const requestData = {
+      clientId: getClientId(),
       latitude,
       longitude,
       soilType: formData.soilType,
@@ -927,16 +1232,24 @@ mainForm?.addEventListener("submit", async (event) => {
 
     const response = await fetch("/api/crop-care", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: getJsonHeaders(),
       body: JSON.stringify(requestData)
     });
 
     const payload = await response.json();
 
     if (!response.ok) {
+      if (response.status === 402) {
+        handleSubscriptionBlock(payload);
+      }
       throw new Error(payload.error || "No se pudo analizar el cultivo.");
+    }
+
+    if (payload.membership) {
+      renderMembership({
+        membership: payload.membership,
+        plans: payload.plans || availablePlans
+      });
     }
 
     if (payload.soilDetection && payload.soilDetection.source !== "manual") {
@@ -953,7 +1266,8 @@ mainForm?.addEventListener("submit", async (event) => {
         requestData.fertilityLevel,
       landSizeHa: formData.landSizeHa,
       cropId: requestData.cropId || null,
-      customCrop: requestData.customCrop || null
+      customCrop: requestData.customCrop || null,
+      clientId: getClientId()
     };
 
     renderCropAnalysis(payload);
@@ -979,9 +1293,7 @@ pdfButton?.addEventListener("click", async () => {
   try {
     const response = await fetch("/api/reports/pdf", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: getJsonHeaders(),
       body: JSON.stringify(lastReportRequest)
     });
 
@@ -1028,6 +1340,7 @@ function renderCropAnalysis(data) {
   const weather = data.weather || {};
   const currentWeather = weather.current || {};
   const detection = data.soilDetection || null;
+  const membership = data.membership || membershipState;
 
   const summaryValue = hasProduction
     ? `${formatNumber(data.production.totalTon, 2)} ton`
@@ -1146,6 +1459,8 @@ function renderCropAnalysis(data) {
         <div class="soil-properties">${buildSoilPropertiesHtml(detection?.properties)}</div>
       </article>
 
+      ${buildWhatsAppAlertsBlock(data.plan?.notifications, membership)}
+
       <article class="info-block">
         <h3>Recomendaciones</h3>
         <ul id="analysisList"></ul>
@@ -1237,6 +1552,53 @@ function renderCropAnalysis(data) {
   if (data.weather?.warning) {
     showToast(data.weather.warning);
   }
+}
+
+function buildWhatsAppAlertsBlock(notifications = [], membership) {
+  const plan = membership?.activePlan || {};
+  const isPaidPlan = plan.id && plan.id !== "free";
+  const preferences = new Set(membership?.notificationPreferences || []);
+  const visibleNotifications = (notifications || [])
+    .filter((item) => !preferences.size || preferences.has(item.type))
+    .slice(0, 5);
+
+  if (!isPaidPlan) {
+    return `
+      <article class="info-block whatsapp-block">
+        <div class="info-title-row">
+          <h3>Alertas WhatsApp</h3>
+          <span>Plus o Pro</span>
+        </div>
+        <p class="muted-line">Tu consulta gratis ya queda registrada. Activa Plus para alertas especificas o Pro para elegir que notificaciones recibir.</p>
+      </article>
+    `;
+  }
+
+  return `
+    <article class="info-block whatsapp-block">
+      <div class="info-title-row">
+        <h3>Alertas WhatsApp</h3>
+        <span>${escapeHtml(plan.name || "Suscripcion")}</span>
+      </div>
+      <p class="muted-line">Destino: ${escapeHtml(membership.whatsappNumber || "-")}</p>
+      <ul class="notification-list">
+        ${
+          visibleNotifications.length
+            ? visibleNotifications
+                .map(
+                  (item) => `
+                    <li class="notification-item priority-${escapeHtml(item.priority || "media")}">
+                      <strong>${escapeHtml(item.title)}</strong>
+                      <span>${escapeHtml(item.message)}</span>
+                    </li>
+                  `
+                )
+                .join("")
+            : "<li class=\"notification-item\"><strong>Sin alertas activas</strong><span>No hay eventos que coincidan con tus preferencias actuales.</span></li>"
+        }
+      </ul>
+    </article>
+  `;
 }
 
 function renderForecast(forecast, containerId) {

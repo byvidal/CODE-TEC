@@ -27,9 +27,23 @@ app.use((request, response, next) => {
 app.use((error, _request, response, _next) => {
   console.error("Error:", error.message);
   const statusCode = error.statusCode || 400;
-  response.status(statusCode).json({
+  const payload = {
     error: error.message || "Ocurrio un error inesperado."
-  });
+  };
+
+  if (error.code) {
+    payload.code = error.code;
+  }
+
+  if (error.membership) {
+    payload.membership = error.membership;
+  }
+
+  if (error.plans) {
+    payload.plans = error.plans;
+  }
+
+  response.status(statusCode).json(payload);
 });
 
 app.listen(PORT, () => {

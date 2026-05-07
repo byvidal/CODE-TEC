@@ -26,6 +26,7 @@
       </div>
 
       <div class="topbar-actions">
+        <p class="status-pill membership-pill" id="membershipStatus">Gratis</p>
         <p class="status-pill" id="connectionStatus">Listo</p>
       </div>
     </header>
@@ -39,6 +40,76 @@
             Selecciona la ubicacion, detecta automaticamente el tipo de suelo y genera un plan de cultivo con clima, riego, fertilizacion y produccion estimada.
           </p>
         </div>
+
+        <section class="membership-panel" aria-labelledby="membershipTitle">
+          <div class="section-row">
+            <div>
+              <p class="section-kicker">Modelo de negocio</p>
+              <h3 id="membershipTitle">Consultas y alertas WhatsApp</h3>
+            </div>
+            <span class="section-chip" id="membershipPlanChip">Consulta gratis</span>
+          </div>
+
+          <div class="usage-card">
+            <div>
+              <span id="membershipUsageText">Cargando consultas...</span>
+              <strong id="membershipPlanName">Consulta gratis</strong>
+            </div>
+            <div class="usage-meter" aria-hidden="true">
+              <span id="membershipUsageBar"></span>
+            </div>
+          </div>
+
+          <div class="plan-grid" id="planGrid"></div>
+
+          <div class="billing-panel hidden" id="billingPanel">
+            <div class="billing-panel-header">
+              <div>
+                <p class="section-kicker">Pago con tarjeta</p>
+                <h4 id="billingPlanTitle">Activar plan</h4>
+              </div>
+              <button class="ghost-button" type="button" id="cancelBillingButton">Cerrar</button>
+            </div>
+
+            <div class="form-grid billing-form-grid">
+              <label class="wide">
+                WhatsApp para alertas
+                <input id="whatsappNumber" type="tel" placeholder="+52 5512345678" autocomplete="tel">
+              </label>
+
+              <label class="wide">
+                Nombre en la tarjeta
+                <input id="cardholderName" type="text" placeholder="Nombre del titular" autocomplete="cc-name">
+              </label>
+
+              <label class="wide">
+                Numero de tarjeta
+                <input id="cardNumber" type="text" inputmode="numeric" placeholder="4242 4242 4242 4242" autocomplete="cc-number">
+              </label>
+
+              <label>
+                Vencimiento
+                <input id="cardExpiry" type="text" placeholder="MM/AA" autocomplete="cc-exp">
+              </label>
+
+              <label>
+                CVC
+                <input id="cardCvc" type="text" inputmode="numeric" placeholder="123" autocomplete="cc-csc">
+              </label>
+            </div>
+
+            <div class="notification-picker hidden" id="notificationPicker">
+              <p class="section-kicker">Alertas Pro</p>
+              <div id="notificationOptions"></div>
+            </div>
+
+            <p class="field-hint">
+              Demo de pago: se valida la tarjeta, pero no se guarda el numero completo ni se realiza un cargo real.
+            </p>
+
+            <button class="primary-button" type="button" id="payButton">Activar suscripcion</button>
+          </div>
+        </section>
 
         <form id="mainForm">
           <section class="form-section location-card" aria-label="Ubicacion de la parcela">

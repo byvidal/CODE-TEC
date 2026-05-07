@@ -49,6 +49,15 @@ function formatForecast(day) {
   return `${day.date}: ${day.temperatureMin ?? "-"}-${day.temperatureMax ?? "-"} C, lluvia ${day.rainProbability ?? "-"}%`;
 }
 
+function formatNotificationPreferences(membership) {
+  const selected = new Set(membership?.notificationPreferences || []);
+  const labels = membership?.activePlan?.notificationTypes
+    ?.filter((item) => selected.has(item.id))
+    .map((item) => item.label);
+
+  return labels?.length ? labels.join(", ") : "-";
+}
+
 /**
  * Genera un reporte PDF completo con toda la información agrícola
  * @param {object} data - Datos del reporte
@@ -150,12 +159,20 @@ function createAgriculturalReportPdf(data) {
     );
   }
 
-  if (data.plan?.membership) {
-    writeSectionTitle(doc, "Membresia y alertas en tiempo real");
-    writeKeyValue(doc, "Plan", data.plan.membership.name);
-    writeKeyValue(doc, "Costo", data.plan.membership.billingLabel || `${data.plan.membership.monthlyCostMXN} ${data.plan.membership.currency}/mes`);
-    writeKeyValue(doc, "Metodo de pago", data.plan.membership.paymentMethod);
-    writeKeyValue(doc, "Estado", data.plan.membership.status);
+  if (data.membership?.activePlan?.id && data.membership.activePlan.id !== "free") {
+    writeSectionTitle(doc, "Suscripcion y alertas por WhatsApp");
+    writeKeyValue(doc, "Plan", data.membership.activePlan.name);
+    writeKeyValue(doc, "Costo", data.membership.activePlan.billingLabel);
+    writeKeyValue(doc, "Consultas", data.membership.activePlan.queryLimitLabel);
+    writeKeyValue(doc, "WhatsApp", data.membership.whatsappNumber || "-");
+    writeKeyValue(
+      doc,
+      "Pago",
+      data.membership.payment
+        ? `${data.membership.payment.brand} terminacion ${data.membership.payment.last4}`
+        : "Tarjeta bancaria"
+    );
+    writeKeyValue(doc, "Alertas activas", formatNotificationPreferences(data.membership));
 
     if (data.plan.notifications?.length) {
       doc.moveDown(0.35).font("Helvetica-Bold").text("Notificaciones incluidas:");
