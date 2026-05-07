@@ -244,7 +244,7 @@ function generateRecommendation({ crops, weather, soilType, fertilityLevel, land
  * @param {string} params.fertilityLevel - Nivel de fertilidad
  * @returns {object} Análisis detallado del cultivo con clima y cuidados
  */
-function analyzeCropConditions({ crop, weather, soilType, fertilityLevel }) {
+function analyzeCropConditions({ crop, weather, soilType, fertilityLevel, landSizeHa }) {
   const soil = getSoilCoefficient(soilType, fertilityLevel);
   
   if (!soil) {
@@ -255,8 +255,11 @@ function analyzeCropConditions({ crop, weather, soilType, fertilityLevel }) {
   const score = scoreCrop(crop, weather, soilType);
   const recommendations = buildRecommendations(crop, weather);
   const plan = buildAgriculturalPlan(crop, weather);
+  const production = landSizeHa === undefined || landSizeHa === null || landSizeHa === ""
+    ? null
+    : estimateProduction(landSizeHa, crop, climate.coefficient, soil.coefficient);
 
-  return {
+  const result = {
     crop,
     climate,
     soil,
@@ -269,6 +272,12 @@ function analyzeCropConditions({ crop, weather, soilType, fertilityLevel }) {
       rainStatus: classifyRain(weather)
     }
   };
+
+  if (production) {
+    result.production = production;
+  }
+
+  return result;
 }
 
 function classifyTemperature(crop, weather) {

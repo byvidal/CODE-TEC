@@ -83,6 +83,8 @@ function createAgriculturalReportPdf(data) {
     .text(`Generado: ${new Date().toLocaleString("es-MX")}`)
     .moveDown(1);
 
+  const cropSectionTitle = data.reportMode === "selected" ? "Cultivo analizado" : "Cultivo recomendado";
+
   doc
     .fontSize(11)
     .fillColor("#1f2a24")
@@ -93,13 +95,14 @@ function createAgriculturalReportPdf(data) {
   writeSectionTitle(doc, "Ubicacion y clima");
   writeKeyValue(doc, "Latitud", data.weather.latitude);
   writeKeyValue(doc, "Longitud", data.weather.longitude);
+  writeKeyValue(doc, "Fuente de clima", data.weather.source);
   writeKeyValue(doc, "Zona horaria", data.weather.timezone);
   writeKeyValue(doc, "Temperatura actual", `${data.weather.current.temperature ?? "-"} C`);
   writeKeyValue(doc, "Humedad actual", `${data.weather.current.humidity ?? "-"}%`);
   writeKeyValue(doc, "Probabilidad de lluvia", `${data.weather.current.rainProbability ?? "-"}%`);
   writeKeyValue(doc, "Condicion climatica", `${data.climate.label} (Cc ${data.climate.coefficient})`);
 
-  writeSectionTitle(doc, "Cultivo recomendado");
+  writeSectionTitle(doc, cropSectionTitle);
   writeKeyValue(doc, "Cultivo", data.crop.name);
   if (data.crop.scientificName) {
     writeKeyValue(doc, "Nombre cientifico", data.crop.scientificName);
@@ -154,6 +157,11 @@ function createAgriculturalReportPdf(data) {
   if (data.cropWarning) {
     writeSectionTitle(doc, "Aviso de datos");
     doc.text(data.cropWarning);
+  }
+
+  if (data.weather.warning) {
+    writeSectionTitle(doc, "Aviso de clima");
+    doc.text(data.weather.warning);
   }
 
   // Agregar pie de página con derechos reservados

@@ -1,4 +1,5 @@
 const BASE_URL = process.env.OPEN_METEO_BASE_URL || "https://api.open-meteo.com/v1/forecast";
+const WEATHER_FALLBACK_ENABLED = process.env.WEATHER_FALLBACK_ENABLED !== "false";
 
 /**
  * Valida y convierte coordenadas geográficas
@@ -75,8 +76,16 @@ async function getWeather(latitudeInput, longitudeInput) {
         }
       }
       
+      if (WEATHER_FALLBACK_ENABLED) {
+        return buildEstimatedWeather(latitude, longitude, error);
+      }
+
       throw error;
     }
+  }
+
+  if (WEATHER_FALLBACK_ENABLED) {
+    return buildEstimatedWeather(latitude, longitude, lastError);
   }
 
   throw lastError || new Error("Error obteniendo datos de Open-Meteo");
@@ -121,6 +130,58 @@ async function fetchWeatherData(latitude, longitude) {
       rain: payload.current?.rain ?? 0
     },
     forecast: summarizeForecast(payload.daily)
+  };
+}
+
+function getSeasonalProfile(latitude) {
+  const month = new Date().getMonth();
+  const northernHemisphere = latitude >= 0;
+  const warmMonths = northernHemisphere ? [3, 4, 5, 6, 7, 8] : [9, 10, 11, 0, 1, 2];
+  const rainyMonths = northernHemisphere ? [5, 6, 7, 8, 9] : [10, 11, 0, 1, 2];
+  const isWarm = warmMonths.includes(month);
+  const isRainy = rainyMonths.includes(month);
+
+  return {
+    temperature: isWarm ? 24 : 18,
+    humidity: isRainy ? 68 : 52,
+    rainProbability: isRainy ? 45 : 18
+  };
+}
+
+function addDays(date, days) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result.toISOString().slice(0, 10);
+}
+
+function buildEstimatedForecast(profile) {
+  const today = new Date();
+
+  return Array.from({ length: 5 }, (_item, index) => ({
+    date: addDays(today, index),
+    temperatureMin: profile.temperature - 5,
+    temperatureMax: profile.temperature + 6,
+    rainProbability: profile.rainProbability
+  }));
+}
+
+function buildEstimatedWeather(latitude, longitude, error) {
+  const profile = getSeasonalProfile(latitude);
+
+  return {
+    source: "estimacion-local",
+    warning: `Open-Meteo no respondio; se uso una estimacion local temporal. Detalle: ${error?.message || "sin detalle"}`,
+    latitude,
+    longitude,
+    timezone: "local",
+    current: {
+      temperature: profile.temperature,
+      humidity: profile.humidity,
+      rainProbability: profile.rainProbability,
+      precipitation: 0,
+      rain: 0
+    },
+    forecast: buildEstimatedForecast(profile)
   };
 }
 

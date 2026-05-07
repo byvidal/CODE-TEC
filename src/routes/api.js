@@ -46,7 +46,7 @@ router.post("/geocode/reverse", async (request, response, next) => {
 
 router.post("/crop-care", async (request, response, next) => {
   try {
-    const { latitude, longitude, cropId, customCrop, soilType, fertilityLevel } = request.body;
+    const { latitude, longitude, cropId, customCrop, soilType, fertilityLevel, landSizeHa } = request.body;
     
     // Validación básica de entrada
     if (!latitude || !longitude || !soilType || !fertilityLevel) {
@@ -66,33 +66,12 @@ router.post("/crop-care", async (request, response, next) => {
       getCrops()
     ]);
 
-    let selectedCrop = null;
-
-    // Buscar cultivo por ID
-    if (cropId) {
-      selectedCrop = cropResult.crops.find((c) => c.id === cropId);
-      if (!selectedCrop) {
-        return response.status(404).json({
-          error: `Cultivo con ID '${cropId}' no encontrado.`
-        });
-      }
-    } else if (customCrop) {
-      // Buscar cultivo personalizado en el catálogo (búsqueda flexible)
-      const searchTerm = customCrop.toLowerCase().trim();
-      selectedCrop = cropResult.crops.find((c) => 
-        c.name.toLowerCase().includes(searchTerm) || 
-        c.id.toLowerCase().includes(searchTerm)
-      );
-
-      // Si no encuentra exacto, crear un cultivo genérico
-      if (!selectedCrop) {
-        selectedCrop = createGenericCrop(customCrop);
-      }
-    }
+    const selectedCrop = resolveSelectedCrop(cropResult.crops, { cropId, customCrop });
 
     if (!selectedCrop) {
+      const cropLabel = cropId ? `ID '${cropId}'` : `'${customCrop}'`;
       return response.status(404).json({
-        error: `No se encontro informacion para el cultivo '${customCrop}'.`
+        error: `No se encontro informacion para el cultivo ${cropLabel}.`
       });
     }
 
@@ -101,7 +80,8 @@ router.post("/crop-care", async (request, response, next) => {
       crop: selectedCrop,
       weather,
       soilType,
-      fertilityLevel
+      fertilityLevel,
+      landSizeHa
     });
 
     response.json({
@@ -115,10 +95,64 @@ router.post("/crop-care", async (request, response, next) => {
   }
 });
 
+function normalizeText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getCropSearchValues(crop) {
+  return [
+    crop.id,
+    crop.name,
+    crop.scientificName,
+    crop.externalName,
+    crop.perenual?.commonName
+  ]
+    .filter(Boolean)
+    .map(normalizeText);
+}
+
+function findCropById(crops, cropId) {
+  const normalizedId = normalizeText(cropId);
+  return crops.find((crop) => normalizeText(crop.id) === normalizedId);
+}
+
+function findCropByName(crops, cropName) {
+  const normalizedName = normalizeText(cropName);
+  if (!normalizedName) {
+    return null;
+  }
+
+  return (
+    crops.find((crop) => getCropSearchValues(crop).some((value) => value === normalizedName)) ||
+    crops.find((crop) => getCropSearchValues(crop).some((value) => value.includes(normalizedName)))
+  );
+}
+
+function resolveSelectedCrop(crops, { cropId, customCrop }) {
+  if (cropId) {
+    const crop = findCropById(crops, cropId);
+    if (crop) {
+      return crop;
+    }
+  }
+
+  if (customCrop) {
+    return findCropByName(crops, customCrop) || createGenericCrop(customCrop);
+  }
+
+  return null;
+}
+
 /**
- * Crea un cultivo genérico cuando el usuario escribe un cultivo personalizado
+ * Crea un cultivo generico cuando el usuario escribe un cultivo personalizado
  * @param {string} cropName - Nombre del cultivo
- * @returns {object} Cultivo genérico con condiciones por defecto
+ * @returns {object} Cultivo generico con condiciones por defecto
  */
 function createGenericCrop(cropName) {
   return {
@@ -197,7 +231,7 @@ router.post("/recommendations", async (request, response, next) => {
 
 router.post("/reports/pdf", async (request, response, next) => {
   try {
-    const { latitude, longitude, soilType, fertilityLevel, landSizeHa } = request.body;
+    const { latitude, longitude, soilType, fertilityLevel, landSizeHa, cropId, customCrop } = request.body;
     
     // Validacion basica de entrada
     if (!latitude || !longitude || !soilType || !fertilityLevel || !landSizeHa) {
@@ -211,13 +245,32 @@ router.post("/reports/pdf", async (request, response, next) => {
       getCrops()
     ]);
 
-    const recommendation = generateRecommendation({
-      crops: cropResult.crops,
-      weather,
-      soilType,
-      fertilityLevel,
-      landSizeHa
-    });
+    const selectedCrop = resolveSelectedCrop(cropResult.crops, { cropId, customCrop });
+    if ((cropId || customCrop) && !selectedCrop) {
+      const cropLabel = cropId ? `ID '${cropId}'` : `'${customCrop}'`;
+      return response.status(404).json({
+        error: `No se encontro informacion para el cultivo ${cropLabel}.`
+      });
+    }
+
+    const recommendation = selectedCrop
+      ? {
+          reportMode: "selected",
+          ...analyzeCropConditions({
+            crop: selectedCrop,
+            weather,
+            soilType,
+            fertilityLevel,
+            landSizeHa
+          })
+        }
+      : generateRecommendation({
+          crops: cropResult.crops,
+          weather,
+          soilType,
+          fertilityLevel,
+          landSizeHa
+        });
 
     const reportData = {
       weather,

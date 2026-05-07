@@ -72,36 +72,22 @@
               Tamano del terreno en hectareas
               <input id="landSizeHa" name="landSizeHa" type="number" min="0.01" step="0.01" value="1" required>
             </label>
-            <label class="wide">
-              Cultivo - Busca o selecciona
-              <div style="position: relative;">
+            <label class="wide crop-field">
+              Cultivo - busca o selecciona
+              <div class="crop-search">
                 <input 
                   id="cropSearchInput" 
                   type="text" 
                   placeholder="Busca: maiz, jitomate, frijol..." 
-                  style="width: 100%; min-height: 44px; border: 1px solid #c9d4ca; border-radius: 6px; padding: 10px 12px; font-family: inherit;"
                   autocomplete="off"
+                  aria-autocomplete="list"
+                  aria-controls="cropDropdown"
+                  aria-expanded="false"
                 >
-                <div 
-                  id="cropDropdown" 
-                  style="
-                    display: none;
-                    position: absolute;
-                    top: 100%;
-                    left: 0;
-                    right: 0;
-                    background: white;
-                    border: 1px solid #c9d4ca;
-                    border-top: none;
-                    border-radius: 0 0 6px 6px;
-                    max-height: 200px;
-                    overflow-y: auto;
-                    z-index: 1000;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                  "
-                ></div>
+                <button class="crop-clear-button hidden" type="button" id="cropClearButton" aria-label="Limpiar cultivo">x</button>
+                <div id="cropDropdown" class="crop-dropdown hidden" role="listbox"></div>
               </div>
-              <small style="color: var(--muted); margin-top: 4px; display: block;">Escribe para buscar o ver sugerencias</small>
+              <small class="field-hint" id="cropSearchHelp">Cargando catalogo de cultivos...</small>
               <input id="selectedCropId" type="hidden" name="selectedCropId" value="">
               <input id="selectedCropName" type="hidden" name="selectedCropName" value="">
             </label>

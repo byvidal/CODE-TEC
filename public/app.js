@@ -7,6 +7,8 @@ const emptyState = document.querySelector("#emptyState");
 const results = document.querySelector("#results");
 const cropSearchInput = document.querySelector("#cropSearchInput");
 const cropDropdown = document.querySelector("#cropDropdown");
+const cropSearchHelp = document.querySelector("#cropSearchHelp");
+const cropClearButton = document.querySelector("#cropClearButton");
 const selectedCropId = document.querySelector("#selectedCropId");
 const selectedCropName = document.querySelector("#selectedCropName");
 const pdfButton = document.querySelector("#pdfButton");
@@ -181,20 +183,71 @@ function renderResults(data) {
   if (data.cropWarning) {
     showToast(`Perenual no respondio; usando catalogo local. ${data.cropWarning}`);
   }
+
+  if (data.weather?.warning) {
+    showToast(data.weather.warning);
+  }
 }
 
 /**
  * Carga la lista de cultivos y configura el buscador
  */
 async function loadAndSetupCrops() {
+  cropSearchHelp.textContent = "Cargando catalogo de cultivos...";
+
   try {
     const response = await fetch("/api/crops");
+    if (!response.ok) {
+      throw new Error("No se pudo cargar el catalogo.");
+    }
+
     const data = await response.json();
-    allCrops = data.crops || [];
+    allCrops = sortCrops(data.crops || []);
+    const sourceLabel = data.source === "catalogo-local+Perenual"
+      ? "catalogo local con datos Perenual"
+      : "catalogo local";
+    cropSearchHelp.textContent = `${allCrops.length} cultivos disponibles desde ${sourceLabel}.`;
   } catch (error) {
     console.error("Error al cargar cultivos:", error);
     allCrops = [];
+    cropSearchHelp.textContent = "No se pudo cargar el catalogo. Puedes escribir el cultivo manualmente.";
   }
+}
+
+function normalizeSearchValue(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getCropSearchText(crop) {
+  return [
+    crop.name,
+    crop.id,
+    crop.scientificName,
+    crop.externalName,
+    crop.perenual?.commonName
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function sortCrops(crops) {
+  return [...crops].sort((a, b) => a.name.localeCompare(b.name, "es-MX"));
+}
+
+function rankCropMatch(crop, search) {
+  const name = normalizeSearchValue(crop.name);
+  const id = normalizeSearchValue(crop.id);
+
+  if (name === search || id === search) return 0;
+  if (name.startsWith(search)) return 1;
+  if (id.startsWith(search)) return 2;
+  return 3;
 }
 
 /**
@@ -203,15 +256,38 @@ async function loadAndSetupCrops() {
  * @returns {array} Cultivos que coinciden
  */
 function filterCrops(searchText) {
-  if (!searchText.trim()) {
-    return allCrops.slice(0, 8); // Mostrar primeros 8 si está vacío
+  const search = normalizeSearchValue(searchText);
+
+  if (!search) {
+    return allCrops;
   }
-  
-  const search = searchText.toLowerCase().trim();
-  return allCrops.filter(crop => 
-    crop.name.toLowerCase().includes(search) || 
-    crop.id.toLowerCase().includes(search)
-  );
+
+  return allCrops
+    .filter((crop) => normalizeSearchValue(getCropSearchText(crop)).includes(search))
+    .sort((a, b) => rankCropMatch(a, search) - rankCropMatch(b, search) || a.name.localeCompare(b.name, "es-MX"));
+}
+
+function setCropDropdownVisible(isVisible) {
+  cropDropdown.classList.toggle("hidden", !isVisible);
+  cropSearchInput.setAttribute("aria-expanded", String(isVisible));
+}
+
+function updateCropClearButton() {
+  cropClearButton.classList.toggle("hidden", !cropSearchInput.value.trim());
+}
+
+function buildCropMeta(crop) {
+  const parts = [];
+
+  if (crop.growthTimeDays) {
+    parts.push(`${crop.growthTimeDays} dias`);
+  }
+
+  if (crop.waterRequirement) {
+    parts.push(crop.waterRequirement);
+  }
+
+  return parts.join(" - ");
 }
 
 /**
@@ -223,27 +299,34 @@ function renderCropDropdown(crops) {
   
   if (crops.length === 0) {
     const emptyOption = document.createElement("div");
-    emptyOption.style.cssText = "padding: 10px 12px; color: var(--muted); font-size: 0.9rem;";
-    emptyOption.textContent = "No se encontraron cultivos";
+    emptyOption.className = "crop-empty-option";
+    emptyOption.textContent = "No se encontro en el catalogo. Puedes enviar el nombre escrito como cultivo personalizado.";
     cropDropdown.appendChild(emptyOption);
     return;
   }
   
   crops.forEach(crop => {
-    const option = document.createElement("div");
-    option.style.cssText = `
-      padding: 10px 12px;
-      cursor: pointer;
-      border-bottom: 1px solid #f0f0f0;
-      transition: background-color 0.2s;
-    `;
-    option.textContent = crop.name;
-    option.onmouseover = () => {
-      option.style.backgroundColor = "#f5f7f2";
-    };
-    option.onmouseout = () => {
-      option.style.backgroundColor = "white";
-    };
+    const option = document.createElement("button");
+    const main = document.createElement("span");
+    const name = document.createElement("span");
+    const tag = document.createElement("span");
+    const meta = document.createElement("span");
+
+    option.type = "button";
+    option.className = "crop-option";
+    option.setAttribute("role", "option");
+    option.setAttribute("aria-label", `Seleccionar ${crop.name}`);
+
+    main.className = "crop-option-main";
+    name.className = "crop-name";
+    name.textContent = crop.name;
+    tag.className = "crop-tag";
+    tag.textContent = crop.perenual ? "Perenual" : "Local";
+    meta.className = "crop-meta";
+    meta.textContent = buildCropMeta(crop);
+
+    main.append(name, tag);
+    option.append(main, meta);
     option.onclick = () => selectCrop(crop);
     cropDropdown.appendChild(option);
   });
@@ -257,7 +340,8 @@ function selectCrop(crop) {
   cropSearchInput.value = crop.name;
   selectedCropId.value = crop.id;
   selectedCropName.value = crop.name;
-  cropDropdown.style.display = "none";
+  setCropDropdownVisible(false);
+  updateCropClearButton();
 }
 
 // Event listener para búsqueda de cultivos
@@ -265,12 +349,9 @@ cropSearchInput.addEventListener("input", (e) => {
   const searchText = e.target.value;
   const filtered = filterCrops(searchText);
   renderCropDropdown(filtered);
+  updateCropClearButton();
   
-  if (searchText.trim()) {
-    cropDropdown.style.display = "block";
-  } else {
-    cropDropdown.style.display = "none";
-  }
+  setCropDropdownVisible(Boolean(searchText.trim()) || allCrops.length > 0);
   
   // Limpiar selección si el usuario modifica el texto
   if (e.target.value !== selectedCropName.value) {
@@ -284,14 +365,24 @@ cropSearchInput.addEventListener("focus", () => {
   if (cropSearchInput.value.trim() || allCrops.length > 0) {
     const filtered = filterCrops(cropSearchInput.value);
     renderCropDropdown(filtered);
-    cropDropdown.style.display = "block";
+    setCropDropdownVisible(true);
   }
+});
+
+cropClearButton.addEventListener("click", () => {
+  cropSearchInput.value = "";
+  selectedCropId.value = "";
+  selectedCropName.value = "";
+  updateCropClearButton();
+  renderCropDropdown(filterCrops(""));
+  setCropDropdownVisible(allCrops.length > 0);
+  cropSearchInput.focus();
 });
 
 // Cerrar dropdown al hacer click afuera
 document.addEventListener("click", (e) => {
-  if (!e.target.closest(".wide")) {
-    cropDropdown.style.display = "none";
+  if (!e.target.closest(".crop-field")) {
+    setCropDropdownVisible(false);
   }
 });
 
@@ -602,7 +693,8 @@ mainForm.addEventListener("submit", async (event) => {
       latitude: latitude,
       longitude: longitude,
       soilType: formData.soilType,
-      fertilityLevel: formData.fertilityLevel
+      fertilityLevel: formData.fertilityLevel,
+      landSizeHa: formData.landSizeHa
     };
 
     // Si tiene ID de cultivo, usarlo; si no, enviar el nombre personalizado
@@ -631,7 +723,9 @@ mainForm.addEventListener("submit", async (event) => {
       longitude: longitude,
       soilType: formData.soilType,
       fertilityLevel: formData.fertilityLevel,
-      landSizeHa: formData.landSizeHa
+      landSizeHa: formData.landSizeHa,
+      cropId: requestData.cropId || null,
+      customCrop: requestData.customCrop || null
     };
 
     renderCropAnalysis(payload);
@@ -701,17 +795,26 @@ function renderCropAnalysis(data) {
   results.classList.remove("hidden");
   pdfButton.classList.remove("hidden");
 
+  const hasProduction = Boolean(data.production);
+  const summaryValue = hasProduction ? formatNumber(data.production.totalTon, 2) : data.climate.label;
+  const summaryLabel = hasProduction ? "ton estimadas" : "Condicion climatica";
+  const scoreText = hasProduction
+    ? `Compatibilidad: ${data.score}/100 - ${data.climate.label}`
+    : `Compatibilidad: ${data.score}/100`;
+  const productionMetric = hasProduction ? `${formatNumber(data.production.totalTon, 2)} ton` : `${data.soil.coefficient}`;
+  const productionMeta = hasProduction ? `${formatNumber(data.production.landSizeHa, 2)} ha evaluadas` : "Fertilidad del suelo";
+
   // Limpiar resultados previos
   results.innerHTML = `
     <section class="summary-band">
       <div>
         <p class="eyebrow">Cultivo analizado</p>
         <h2 id="analysisCropName">${data.crop.name}</h2>
-        <p id="analysisCropScore">Compatibilidad: ${data.score}/100</p>
+        <p id="analysisCropScore">${scoreText}</p>
       </div>
       <div class="production-number">
-        <span id="analysisClimate">${data.climate.label}</span>
-        <small>Condición climática</small>
+        <span id="analysisClimate">${summaryValue}</span>
+        <small>${summaryLabel}</small>
       </div>
     </section>
 
@@ -732,9 +835,9 @@ function renderCropAnalysis(data) {
         <small id="analysisRainStatus" style="color: var(--muted); font-size: 0.75rem;"></small>
       </article>
       <article class="metric-card">
-        <p>Coeficiente</p>
+        <p>${hasProduction ? "Produccion" : "Coeficiente"}</p>
         <strong id="analysisCoef">-</strong>
-        <small>Fertilidad del suelo</small>
+        <small>${productionMeta}</small>
       </article>
     </div>
 
@@ -797,6 +900,10 @@ function renderCropAnalysis(data) {
             <dt>Longitud</dt>
             <dd>${formatNumber(data.weather.longitude, 4)}</dd>
           </div>
+          <div>
+            <dt>Fuente clima</dt>
+            <dd>${data.weather.source || "-"}</dd>
+          </div>
         </dl>
       </article>
     </section>
@@ -812,7 +919,7 @@ function renderCropAnalysis(data) {
   document.querySelector("#analysisRain").textContent = `${formatNumber(data.weather.current.rainProbability, 0)}%`;
   document.querySelector("#analysisRainStatus").textContent = data.analysis.rainStatus.status.toUpperCase();
   
-  document.querySelector("#analysisCoef").textContent = `${data.soil.coefficient}`;
+  document.querySelector("#analysisCoef").textContent = productionMetric;
   document.querySelector("#analysisPlanIrrigation").textContent = data.plan.irrigation;
 
   // Llenar listas
@@ -847,5 +954,9 @@ function renderCropAnalysis(data) {
 
   if (data.cropWarning) {
     showToast(`Usando catálogo local: ${data.cropWarning}`);
+  }
+
+  if (data.weather?.warning) {
+    showToast(data.weather.warning);
   }
 }

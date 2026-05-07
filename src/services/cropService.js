@@ -2,6 +2,9 @@ const fallbackCrops = require("../data/crops");
 
 const PERENUAL_API_URL = process.env.PERENUAL_API_URL || "https://perenual.com/api/v2";
 const PERENUAL_API_KEY = process.env.PERENUAL_API_KEY;
+const PERENUAL_CROPS_ENABLED = process.env.PERENUAL_CROPS_ENABLED === "true";
+const PERENUAL_MAX_RETRIES = Number(process.env.PERENUAL_MAX_RETRIES || 1);
+let cachedCropResult = null;
 
 const perenualCropQueries = [
   { query: "corn", fallbackId: "maiz" },
@@ -71,15 +74,17 @@ function mergePerenualDetails(details, profile) {
 
   return {
     ...profile,
-    id: `perenual-${details.id || profile.id}`,
-    name: commonName,
-    scientificName,
+    id: profile.id,
+    name: profile.name,
+    scientificName: scientificName || profile.scientificName || null,
+    externalName: commonName,
     imageUrl: details.default_image?.regular_url || details.default_image?.original_url || null,
     cycle: details.cycle || null,
     waterRequirement: formatWatering(details) || profile.waterRequirement,
     care: buildCare(details, profile),
     perenual: {
       id: details.id,
+      commonName,
       type: details.type || null,
       edibleFruit: Boolean(details.edible_fruit),
       poisonousToHumans: Boolean(details.poisonous_to_humans),
@@ -90,7 +95,7 @@ function mergePerenualDetails(details, profile) {
 }
 
 async function fetchJson(url) {
-  const maxRetries = 4;
+  const maxRetries = Math.max(1, PERENUAL_MAX_RETRIES);
   let lastError;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -148,7 +153,7 @@ async function fetchPerenualDetail(queryConfig) {
 }
 
 async function fetchPerenualCrops() {
-  if (!PERENUAL_API_KEY) {
+  if (!PERENUAL_API_KEY || !PERENUAL_CROPS_ENABLED) {
     return null;
   }
 
@@ -170,6 +175,10 @@ async function fetchPerenualCrops() {
         crops.push(mergePerenualDetails(details, profile));
       }
     } catch (error) {
+      if (error.statusCode === 429) {
+        throw new Error("Perenual alcanzo el limite de solicitudes.");
+      }
+
       console.warn(`Error al obtener detalles de Perenual para ${queryConfig.query}:`, error.message);
       // Continuar con el siguiente cultivo
     }
@@ -187,19 +196,55 @@ async function fetchPerenualCrops() {
   return crops;
 }
 
+function mergeCatalogs(localCrops, apiCrops = []) {
+  const mergedById = new Map(localCrops.map((crop) => [crop.id, crop]));
+
+  apiCrops.forEach((crop) => {
+    if (!crop?.id) {
+      return;
+    }
+
+    mergedById.set(crop.id, {
+      ...mergedById.get(crop.id),
+      ...crop
+    });
+  });
+
+  return Array.from(mergedById.values()).sort((a, b) => a.name.localeCompare(b.name, "es-MX"));
+}
+
+function buildLocalCropResult(warning = null) {
+  const result = {
+    source: "catalogo-local",
+    crops: mergeCatalogs(fallbackCrops)
+  };
+
+  if (warning) {
+    result.warning = warning;
+  }
+
+  return result;
+}
+
 /**
  * Obtiene los cultivos desde Perenual API o catálogo local como fallback
  * @returns {Promise<{source: string, crops: array, warning?: string}>} Cultivos disponibles
  */
 async function getCrops() {
+  if (cachedCropResult) {
+    return cachedCropResult;
+  }
+
   try {
     const apiCrops = await fetchPerenualCrops();
     if (apiCrops?.length) {
-      console.log(`✓ Cultivos cargados desde Perenual (${apiCrops.length})`);
-      return {
-        source: "Perenual",
-        crops: apiCrops
+      const mergedCrops = mergeCatalogs(fallbackCrops, apiCrops);
+      console.log(`✓ Cultivos cargados desde catalogo local con datos Perenual (${mergedCrops.length})`);
+      cachedCropResult = {
+        source: "catalogo-local+Perenual",
+        crops: mergedCrops
       };
+      return cachedCropResult;
     }
   } catch (error) {
     console.log(`[INFO] Usando catálogo local. Razón: ${error.message}`);
@@ -207,10 +252,8 @@ async function getCrops() {
 
   // Fallback al catálogo local
   console.log(`✓ Usando catálogo local de cultivos (${fallbackCrops.length} cultivos disponibles)`);
-  return {
-    source: "catalogo-local",
-    crops: fallbackCrops
-  };
+  cachedCropResult = buildLocalCropResult();
+  return cachedCropResult;
 }
 
 module.exports = {

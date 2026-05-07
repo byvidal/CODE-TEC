@@ -230,6 +230,117 @@ select:focus {
   border-color: var(--green);
 }
 
+.field-hint {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.crop-search {
+  position: relative;
+}
+
+.crop-search input {
+  padding-right: 44px;
+}
+
+.crop-clear-button {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface-soft);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.crop-clear-button:hover {
+  color: var(--green-dark);
+  background: #e5efe4;
+}
+
+.crop-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 1200;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid #c9d4ca;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 16px 34px rgba(31, 42, 36, 0.16);
+}
+
+.crop-option,
+.crop-empty-option {
+  width: 100%;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  background: transparent;
+  text-align: left;
+}
+
+.crop-option {
+  cursor: pointer;
+}
+
+.crop-option:last-child,
+.crop-empty-option:last-child {
+  border-bottom: 0;
+}
+
+.crop-option:hover,
+.crop-option:focus {
+  outline: none;
+  background: var(--surface-soft);
+}
+
+.crop-option-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.crop-name {
+  font-weight: 800;
+}
+
+.crop-tag {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: var(--blue);
+  background: #e7f1f4;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.crop-meta {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.crop-empty-option {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
 .primary-button,
 .secondary-button {
   min-height: 46px;
@@ -352,6 +463,14 @@ select:focus {
 .metric-card strong {
   display: block;
   font-size: 1.25rem;
+}
+
+.metric-card small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.35;
 }
 
 .content-grid {
@@ -624,6 +743,14 @@ li {
     min-height: 40px;
     padding: 8px 10px;
     font-size: 16px;
+  }
+
+  .crop-search input {
+    padding-right: 42px;
+  }
+
+  .crop-dropdown {
+    max-height: 240px;
   }
 
   label {
