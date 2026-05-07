@@ -238,6 +238,13 @@ router.post("/recommendations", async (request, response, next) => {
 
 router.post("/reports/pdf", async (request, response, next) => {
   try {
+    const clientId = getClientId(request);
+    const cachedReport = buildCachedReportData(request.body.reportData, clientId);
+
+    if (cachedReport) {
+      return sendPdfResponse(response, cachedReport);
+    }
+
     const {
       latitude,
       longitude,
@@ -253,8 +260,6 @@ router.post("/reports/pdf", async (request, response, next) => {
         error: "Latitud, longitud y tamano del terreno son obligatorios."
       });
     }
-
-    const clientId = getClientId(request);
 
     const [weather, cropResult, soilSelection] = await Promise.all([
       getWeather(latitude, longitude),
@@ -299,19 +304,38 @@ router.post("/reports/pdf", async (request, response, next) => {
       ...recommendation
     };
 
+    return sendPdfResponse(response, reportData);
+  } catch (error) {
+    next(error);
+  }
+});
+
+function sendPdfResponse(response, reportData) {
     response.setHeader("Content-Type", "application/pdf");
     response.setHeader("Content-Disposition", 'attachment; filename="reporte-pda.pdf"');
 
     const pdf = createAgriculturalReportPdf(reportData);
     pdf.pipe(response);
     pdf.end();
-  } catch (error) {
-    next(error);
-  }
-});
+}
 
 function isMissing(value) {
   return value === undefined || value === null || String(value).trim() === "";
+}
+
+function buildCachedReportData(reportData, clientId) {
+  if (!reportData || typeof reportData !== "object") {
+    return null;
+  }
+
+  if (!reportData.weather || !reportData.crop || !reportData.climate || !reportData.soil || !reportData.plan) {
+    return null;
+  }
+
+  return {
+    ...reportData,
+    membership: getClientMembership(clientId)
+  };
 }
 
 function getClientId(request) {

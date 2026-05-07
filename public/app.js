@@ -54,6 +54,7 @@ const soilUi = {
 
 let allCrops = [];
 let lastReportRequest = null;
+let lastReportData = null;
 let lastSoilDetection = null;
 let soilAutoMode = true;
 let isApplyingSoilSuggestion = false;
@@ -1269,6 +1270,10 @@ mainForm?.addEventListener("submit", async (event) => {
       customCrop: requestData.customCrop || null,
       clientId: getClientId()
     };
+    lastReportData = {
+      ...payload,
+      reportMode: "selected"
+    };
 
     renderCropAnalysis(payload);
     showToast("Analisis completado.");
@@ -1294,7 +1299,10 @@ pdfButton?.addEventListener("click", async () => {
     const response = await fetch("/api/reports/pdf", {
       method: "POST",
       headers: getJsonHeaders(),
-      body: JSON.stringify(lastReportRequest)
+      body: JSON.stringify({
+        ...lastReportRequest,
+        reportData: lastReportData
+      })
     });
 
     if (!response.ok) {
