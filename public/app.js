@@ -64,7 +64,7 @@ function showToast(message) {
 function setLoading(isLoading) {
   const submitButton = mainForm.querySelector("button[type='submit']");
   submitButton.disabled = isLoading;
-  submitButton.textContent = isLoading ? "Analizando..." : "Generar plan agricola";
+  submitButton.textContent = isLoading ? "Analizando parcela..." : "Generar plan agricola";
   setStatus(isLoading ? "Consultando" : "Listo");
 }
 
@@ -811,6 +811,11 @@ function renderCropAnalysis(data) {
         <p class="eyebrow">Cultivo analizado</p>
         <h2 id="analysisCropName">${data.crop.name}</h2>
         <p id="analysisCropScore">${scoreText}</p>
+        <div class="summary-tags">
+          <span>${data.weather.source || "clima"}</span>
+          <span>${data.soil.soilLabel}</span>
+          <span>${data.soil.fertilityLevel}</span>
+        </div>
       </div>
       <div class="production-number">
         <span id="analysisClimate">${summaryValue}</span>
@@ -822,17 +827,17 @@ function renderCropAnalysis(data) {
       <article class="metric-card">
         <p>Temperatura</p>
         <strong id="analysisTemp">-</strong>
-        <small id="analysisTempStatus" style="color: var(--muted); font-size: 0.75rem;"></small>
+        <small id="analysisTempStatus" class="metric-status"></small>
       </article>
       <article class="metric-card">
         <p>Humedad</p>
         <strong id="analysisHumidity">-</strong>
-        <small id="analysisHumidityStatus" style="color: var(--muted); font-size: 0.75rem;"></small>
+        <small id="analysisHumidityStatus" class="metric-status"></small>
       </article>
       <article class="metric-card">
         <p>Lluvia</p>
         <strong id="analysisRain">-</strong>
-        <small id="analysisRainStatus" style="color: var(--muted); font-size: 0.75rem;"></small>
+        <small id="analysisRainStatus" class="metric-status"></small>
       </article>
       <article class="metric-card">
         <p>${hasProduction ? "Produccion" : "Coeficiente"}</p>

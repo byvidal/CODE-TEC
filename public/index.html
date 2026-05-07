@@ -3,15 +3,18 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PDA | Plataforma de Apoyo Agricola</title>
+    <title>PDA | Plataforma de Desarrollo Agricola</title>
     <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   </head>
   <body>
     <header class="topbar">
-      <div>
-        <p class="eyebrow">PDA</p>
-        <h1>Plataforma de Apoyo Agricola</h1>
+      <div class="brand-lockup">
+        <span class="brand-mark" aria-hidden="true">PDA</span>
+        <div>
+          <p class="eyebrow">Plataforma de Desarrollo Agricola</p>
+          <h1>PDA</h1>
+        </div>
       </div>
       <p class="status-pill" id="connectionStatus">Listo</p>
     </header>
@@ -19,94 +22,121 @@
     <main class="app-shell">
       <section class="input-panel" aria-labelledby="formTitle">
         <div class="section-heading">
-          <p class="eyebrow">Plan Agricola Personalizado</p>
-          <h2 id="formTitle">Genera tu recomendacion</h2>
+          <p class="eyebrow">Diagnostico de parcela</p>
+          <h2 id="formTitle">Plan agricola personalizado</h2>
         </div>
 
         <form id="mainForm">
-          <div class="location-card">
+          <section class="form-section location-card" aria-label="Ubicacion de la parcela">
+            <div class="section-row">
+              <div>
+                <p class="section-kicker">Ubicacion</p>
+                <h3>Parcela</h3>
+              </div>
+              <span class="section-chip">Mapa activo</span>
+            </div>
             <div class="location-row">
               <button class="secondary-button" type="button" id="locationButton">
                 <span aria-hidden="true">GPS</span>
-                Usar ubicación actual
+                Usar ubicacion actual
               </button>
-              <div class="coords" id="coordsText">Sin ubicación</div>
+              <div class="coords" id="coordsText">Sin ubicacion</div>
             </div>
-            <p class="location-hint">Puedes hacer clic en el mapa o arrastrar el marcador para ajustar la ubicación.</p>
-            <div class="address" id="addressText">Ubicación aproximada: -</div>
-            <div id="mapContainer" class="map-shell" aria-label="Mapa de ubicación">
-              <div id="miniMap" class="map-canvas" aria-label="Mapa con tu ubicación seleccionada"></div>
+            <div class="address" id="addressText">Ubicacion aproximada: -</div>
+            <div id="mapContainer" class="map-shell" aria-label="Mapa de ubicacion">
+              <div id="miniMap" class="map-canvas" aria-label="Mapa con tu ubicacion seleccionada"></div>
               <div class="map-overlay" id="mapOverlay">
                 <p>Haz clic en el mapa o usa GPS para seleccionar tu parcela.</p>
               </div>
             </div>
-          </div>
+          </section>
 
-          <div class="form-grid">
-            <label>
-              Latitud
-              <input id="latitude" name="latitude" type="number" step="any" placeholder="19.4326" required>
-            </label>
-            <label>
-              Longitud
-              <input id="longitude" name="longitude" type="number" step="any" placeholder="-99.1332" required>
-            </label>
-            <label>
-              Tipo de suelo
-              <select id="soilType" name="soilType" required>
-                <option value="franco">Franco</option>
-                <option value="arenoso">Arenoso</option>
-                <option value="arcilloso">Arcilloso</option>
-                <option value="limoso">Limoso</option>
-              </select>
-            </label>
-            <label>
-              Fertilidad
-              <select id="fertilityLevel" name="fertilityLevel" required>
-                <option value="bueno">Bueno (Cf 0.9)</option>
-                <option value="medio">Medio (Cf 0.7)</option>
-                <option value="pobre">Pobre (Cf 0.5)</option>
-              </select>
-            </label>
-            <label class="wide">
-              Tamano del terreno en hectareas
-              <input id="landSizeHa" name="landSizeHa" type="number" min="0.01" step="0.01" value="1" required>
-            </label>
-            <label class="wide crop-field">
-              Cultivo - busca o selecciona
-              <div class="crop-search">
-                <input 
-                  id="cropSearchInput" 
-                  type="text" 
-                  placeholder="Busca: maiz, jitomate, frijol..." 
-                  autocomplete="off"
-                  aria-autocomplete="list"
-                  aria-controls="cropDropdown"
-                  aria-expanded="false"
-                >
-                <button class="crop-clear-button hidden" type="button" id="cropClearButton" aria-label="Limpiar cultivo">x</button>
-                <div id="cropDropdown" class="crop-dropdown hidden" role="listbox"></div>
+          <section class="form-section" aria-label="Parametros agricolas">
+            <div class="section-row">
+              <div>
+                <p class="section-kicker">Parametros</p>
+                <h3>Suelo y cultivo</h3>
               </div>
-              <small class="field-hint" id="cropSearchHelp">Cargando catalogo de cultivos...</small>
-              <input id="selectedCropId" type="hidden" name="selectedCropId" value="">
-              <input id="selectedCropName" type="hidden" name="selectedCropName" value="">
-            </label>
-          </div>
+            </div>
 
-          <button class="primary-button" type="submit">
-            Generar plan agricola
-          </button>
-          <button class="secondary-button hidden" type="button" id="pdfButton">
-            Descargar PDF
-          </button>
+            <div class="form-grid">
+              <label>
+                Latitud
+                <input id="latitude" name="latitude" type="number" step="any" placeholder="19.4326" required>
+              </label>
+              <label>
+                Longitud
+                <input id="longitude" name="longitude" type="number" step="any" placeholder="-99.1332" required>
+              </label>
+              <label>
+                Tipo de suelo
+                <select id="soilType" name="soilType" required>
+                  <option value="franco">Franco</option>
+                  <option value="arenoso">Arenoso</option>
+                  <option value="arcilloso">Arcilloso</option>
+                  <option value="limoso">Limoso</option>
+                </select>
+              </label>
+              <label>
+                Fertilidad
+                <select id="fertilityLevel" name="fertilityLevel" required>
+                  <option value="bueno">Bueno (Cf 0.9)</option>
+                  <option value="medio">Medio (Cf 0.7)</option>
+                  <option value="pobre">Pobre (Cf 0.5)</option>
+                </select>
+              </label>
+              <label class="wide">
+                Tamano del terreno en hectareas
+                <input id="landSizeHa" name="landSizeHa" type="number" min="0.01" step="0.01" value="1" required>
+              </label>
+              <label class="wide crop-field">
+                Cultivo
+                <div class="crop-search">
+                  <input
+                    id="cropSearchInput"
+                    type="text"
+                    placeholder="Busca: maiz, jitomate, frijol..."
+                    autocomplete="off"
+                    aria-autocomplete="list"
+                    aria-controls="cropDropdown"
+                    aria-expanded="false"
+                  >
+                  <button class="crop-clear-button hidden" type="button" id="cropClearButton" aria-label="Limpiar cultivo">x</button>
+                  <div id="cropDropdown" class="crop-dropdown hidden" role="listbox"></div>
+                </div>
+                <small class="field-hint" id="cropSearchHelp">Cargando catalogo de cultivos...</small>
+                <input id="selectedCropId" type="hidden" name="selectedCropId" value="">
+                <input id="selectedCropName" type="hidden" name="selectedCropName" value="">
+              </label>
+            </div>
+          </section>
+
+          <div class="action-row">
+            <button class="primary-button" type="submit">
+              Generar plan agricola
+            </button>
+            <button class="secondary-button hidden" type="button" id="pdfButton">
+              Descargar PDF
+            </button>
+          </div>
         </form>
       </section>
 
       <section class="results-panel" aria-live="polite">
         <div class="empty-state" id="emptyState">
+          <div class="field-visual" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
           <p class="eyebrow">Analisis</p>
-          <h2>Ingresa los datos y genera una recomendacion.</h2>
-          <p>La app consultara clima real, evaluara cultivos y calculara una produccion estimada.</p>
+          <h2>Panel listo para diagnosticar la parcela.</h2>
+          <div class="empty-metrics" aria-hidden="true">
+            <span>Clima</span>
+            <span>Suelo</span>
+            <span>Cultivo</span>
+            <span>Produccion</span>
+          </div>
         </div>
 
         <div class="results hidden" id="results">
