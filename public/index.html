@@ -2,24 +2,135 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Greenhouse Monitor - Landing</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Greenhouse Monitor - IoT Agrícola</title>
     <link rel="stylesheet" href="styles.css">
     <style>
-        .hero { text-align: center; padding: 100px 20px; background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; }
-        .hero h1 { font-size: 3em; margin-bottom: 10px; }
-        .hero p { font-size: 1.2em; margin-bottom: 30px; }
+        /* Hero Section */
+        .hero { 
+            text-align: center; 
+            padding: 120px 20px; 
+            background: linear-gradient(135deg, #1e8449, #27ae60); 
+            color: white; 
+            border-bottom-left-radius: 50% 10%;
+            border-bottom-right-radius: 50% 10%;
+            box-shadow: 0 10px 30px rgba(39, 174, 96, 0.3);
+            margin-bottom: 40px;
+        }
+        .hero h1 { 
+            font-size: 3.5em; 
+            margin: 0 0 15px 0; 
+            letter-spacing: -1px;
+        }
+        .hero p { 
+            font-size: 1.3em; 
+            margin: 0 auto 35px auto; 
+            max-width: 700px;
+            line-height: 1.5;
+            opacity: 0.95;
+        }
+        
+        /* Navbar específica de Landing */
+        .landing-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 5%;
+            background: transparent;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            color: white;
+        }
+        .landing-nav .brand {
+            font-size: 1.5em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Features */
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: center;
+            padding: 30px 20px;
+        }
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .card p {
+            color: #7f8c8d;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            margin-top: 60px;
+            color: #95a5a6;
+            border-top: 1px solid #eee;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero { padding: 100px 15px 60px 15px; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+            .hero h1 { font-size: 2.5em; }
+            .hero p { font-size: 1.1em; }
+            .landing-nav { position: relative; background: #1e8449; padding: 15px 20px; }
+        }
+        @media (max-width: 480px) {
+            .hero h1 { font-size: 2em; }
+            .btn { width: 100%; box-sizing: border-box; text-align: center; }
+        }
     </style>
 </head>
 <body>
+    <nav class="landing-nav">
+        <div class="brand">🌱 Greenhouse Monitor</div>
+    </nav>
+
     <div class="hero">
-        <h1>Greenhouse Monitor</h1>
-        <p>Sistema de adquisición de datos, telemetría y teleprocesos para invernaderos inteligentes.</p>
-        <a href="register.html" class="btn btn-secondary" style="font-size: 1.2em;">Probar Demo / Registrarse</a>
+        <h1>Invernaderos Inteligentes</h1>
+        <p>Sistema avanzado de adquisición de datos, telemetría y teleprocesos. Monitorea y automatiza el clima de tu cultivo desde cualquier lugar.</p>
+        <a href="register.html" class="btn btn-secondary" style="font-size: 1.2em; padding: 15px 30px; border-radius: 30px; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);">Comenzar Demostración</a>
     </div>
-    <div class="container grid" style="margin-top: 40px;">
-        <div class="card"><h3>📡 Telemetría en Tiempo Real</h3><p>Recibe datos de sensores IoT de forma remota.</p></div>
-        <div class="card"><h3>⚠️ Alertas Inteligentes</h3><p>Notificaciones ante anomalías climáticas.</p></div>
-        <div class="card"><h3>⚙️ Teleprocesos</h3><p>Automatiza actuadores como bombas y ventiladores.</p></div>
+
+    <div class="container">
+        <div class="grid">
+            <div class="card">
+                <div class="feature-icon">📡</div>
+                <h3>Telemetría en Tiempo Real</h3>
+                <p>Recibe datos de temperatura, humedad de sustrato y niveles de agua directamente desde sensores IoT en milisegundos.</p>
+            </div>
+            <div class="card">
+                <div class="feature-icon">⚠️</div>
+                <h3>Alertas Automáticas</h3>
+                <p>El motor lógico detecta anomalías climáticas al instante y genera notificaciones críticas antes de que tu cultivo sufra estrés.</p>
+            </div>
+            <div class="card">
+                <div class="feature-icon">⚙️</div>
+                <h3>Teleprocesos y Control</h3>
+                <p>Automatiza encendidos de bombas de riego y ventiladores basados en reglas estrictas, o tómalo bajo control manual.</p>
+            </div>
+        </div>
     </div>
+
+    <footer>
+        <p>Prototipo desarrollado para el Hackatón. &copy; 2026 Greenhouse Monitor</p>
+    </footer>
 </body>
 </html>
