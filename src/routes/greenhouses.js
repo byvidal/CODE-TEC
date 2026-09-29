@@ -1,6 +1,14 @@
 const router = require('express').Router();
-const repo = require('../repositories/greenhouseRepository');
-router.get('/', async (req, res) => res.json(await repo.getAll()));
-router.get('/:id', async (req, res) => res.json(await repo.getById(req.params.id)));
-router.get('/:id/zones', async (req, res) => res.json(await repo.getZones(req.params.id)));
+const gRepo = require('../repositories/greenhouseRepository');
+const zRepo = require('../repositories/zoneRepository');
+
+router.get('/', async (req, res, next) => {
+    try { res.json(await gRepo.getAll()); } catch(e) { next(e); }
+});
+router.get('/:id', async (req, res, next) => {
+    try { res.json(await gRepo.getById(req.params.id)); } catch(e) { next(e); }
+});
+router.get('/:id/zones', async (req, res, next) => {
+    try { res.json(await zRepo.getByGreenhouseId(req.params.id)); } catch(e) { next(e); }
+});
 module.exports = router;

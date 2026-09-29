@@ -1,37 +1,41 @@
 # Greenhouse Monitor
 
-Sistema de adquisición de datos, telemetría y teleprocesos para invernaderos inteligentes.
-Recibe datos de sensores (simulados en Wokwi o Node.js), los valida, almacena, y los muestra en un dashboard en tiempo real. 
-Genera alertas y simula el control de actuadores de forma automática o manual.
+Prototipo de sistema de adquisición de datos, telemetría y teleprocesos para invernaderos.
+El backend recibe datos simulados de Wokwi o de un simulador Node.js, los procesa y persiste, para un futuro dashboard.
+
+## Requisitos
+- Node.js 20+
 
 ## Instalación
-
 ```bash
 npm install
 ```
 
-## Configuración y Ejecución
-
-1. Inicializar la base de datos (SQLite):
-   ```bash
-   npm run db:seed
-   ```
-2. Iniciar el servidor backend y frontend:
-   ```bash
-   npm start
-   ```
-   (El servidor corre en http://localhost:3000)
-
-## Simulación de Telemetría
-
-Puedes enviar datos al servidor utilizando el simulador incluido en Node.js:
+## Inicialización
 ```bash
-npm run simulator
+npm run db:reset
 ```
 
-También puedes usar **Wokwi** cargando los archivos de la carpeta `wokwi/`.
+## Ejecución
+```bash
+npm start
+```
+El servidor correrá en http://localhost:3000.
+
+## Simulación de Telemetría
+```bash
+npm run simulator:normal
+npm run simulator:dry
+npm run simulator:heat
+npm run simulator:low-water
+npm run simulator:disconnect
+```
 
 ## Pruebas
 ```bash
 npm test
 ```
+
+## Limitaciones
+- Los sensores son simulados.
+- Las suscripciones utilizan un modelo mock.

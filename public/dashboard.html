@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Greenhouse Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    
+<div class="navbar">
+    <div>
+        <a href="dashboard.html">🌱 Greenhouse Monitor</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="zone.html">Zonas</a>
+        <a href="alerts.html">Alertas</a>
+        <a href="history.html">Historial</a>
+        <a href="actuators.html">Actuadores</a>
+        <a href="automation.html">Automatización</a>
+        <a href="settings.html">Configuración</a>
+    </div>
+    <div>
+        <span style="background: #e67e22; padding: 5px 10px; border-radius: 4px; font-size: 12px;">PROTOTIPO HACKATÓN</span>
+    </div>
+</div>
+
+    <div class="container">
+        <h2>Resumen del Invernadero</h2>
+        <div class="grid" id="telemetry-grid">
+            <div class="card"><h3>🌡️ Temperatura</h3><div style="font-size: 2em; font-weight: bold;" id="val-temp">-- °C</div></div>
+            <div class="card"><h3>💧 Humedad Suelo</h3><div style="font-size: 2em; font-weight: bold;" id="val-soil">-- %</div></div>
+            <div class="card"><h3>🌊 Nivel Tanque</h3><div style="font-size: 2em; font-weight: bold;" id="val-water">-- %</div></div>
+        </div>
+        <div class="card">
+            <h3>Dispositivos y Actuadores Rápidos</h3>
+            <p>Para controles avanzados ve a <a href="actuators.html">Actuadores</a>.</p>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

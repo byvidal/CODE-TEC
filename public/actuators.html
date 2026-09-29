@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Actuadores - Greenhouse Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    
+<div class="navbar">
+    <div>
+        <a href="dashboard.html">🌱 Greenhouse Monitor</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="zone.html">Zonas</a>
+        <a href="alerts.html">Alertas</a>
+        <a href="history.html">Historial</a>
+        <a href="actuators.html">Actuadores</a>
+        <a href="automation.html">Automatización</a>
+        <a href="settings.html">Configuración</a>
+    </div>
+    <div>
+        <span style="background: #e67e22; padding: 5px 10px; border-radius: 4px; font-size: 12px;">PROTOTIPO HACKATÓN</span>
+    </div>
+</div>
+
+    <div class="container">
+        <h2>Control de Actuadores</h2>
+        <div class="grid" id="actuators-grid">
+            <div class="card">Cargando...</div>
+        </div>
+    </div>
+    <script>
+        async function fetchActuators() {
+            try {
+                const res = await fetch('/api/actuators');
+                const data = await res.json();
+                document.getElementById('actuators-grid').innerHTML = data.map(a => `
+                    <div class="card">
+                        <h3>${a.name}</h3>
+                        <p>Estado: <strong>${a.state.toUpperCase()}</strong></p>
+                        <button class="btn" onclick="command('${a.id}', 'on')">ON</button>
+                        <button class="btn btn-danger" onclick="command('${a.id}', 'off')">OFF</button>
+                    </div>
+                `).join('');
+            } catch(e) {}
+        }
+        async function command(id, state) {
+            const res = await fetch('/api/actuators/' + id + '/command', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({state, source:'manual'}) });
+            const data = await res.json();
+            if (!res.ok) alert(data.error);
+            fetchActuators();
+        }
+        fetchActuators();
+    </script>
+</body>
+</html>

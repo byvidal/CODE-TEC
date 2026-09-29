@@ -1,7 +1,7 @@
 const { query, run } = require('./db');
-exports.insertEvent = async (event) => {
-    await run(`INSERT INTO actuator_events (id, type, source, actuatorId, previousState, newState, reason, createdAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [event.id, event.type, event.source, event.actuatorId, event.previousState, event.newState, event.reason, event.createdAt]);
+exports.insertEvent = async (e) => {
+    await run(`INSERT INTO events (id, greenhouseId, zoneId, deviceId, type, source, entityId, previousState, newState, reason, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [e.id, e.greenhouseId, e.zoneId, e.deviceId, e.type, e.source, e.entityId, e.previousState, e.newState, e.reason, e.createdAt]);
 };
-exports.getRecent = () => query("SELECT * FROM actuator_events ORDER BY createdAt DESC LIMIT 50");
+exports.getRecent = (limit=50) => query("SELECT * FROM events ORDER BY createdAt DESC LIMIT ?", [limit]);

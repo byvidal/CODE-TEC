@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Historial - Greenhouse Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    
+<div class="navbar">
+    <div>
+        <a href="dashboard.html">🌱 Greenhouse Monitor</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="zone.html">Zonas</a>
+        <a href="alerts.html">Alertas</a>
+        <a href="history.html">Historial</a>
+        <a href="actuators.html">Actuadores</a>
+        <a href="automation.html">Automatización</a>
+        <a href="settings.html">Configuración</a>
+    </div>
+    <div>
+        <span style="background: #e67e22; padding: 5px 10px; border-radius: 4px; font-size: 12px;">PROTOTIPO HACKATÓN</span>
+    </div>
+</div>
+
+    <div class="container">
+        <h2>Telemetría Histórica</h2>
+        <div class="card">
+            <table>
+                <thead><tr><th>Fecha</th><th>Temp (°C)</th><th>Humedad (%)</th><th>H. Suelo (%)</th></tr></thead>
+                <tbody id="history-tbody">
+                    <tr><td colspan="4">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        async function fetchHistory() {
+            try {
+                const res = await fetch('/api/telemetry/history?limit=15');
+                const data = await res.json();
+                document.getElementById('history-tbody').innerHTML = data.map(d => `<tr><td>${new Date(d.timestamp).toLocaleString()}</td><td>${d.temperature.toFixed(1)}</td><td>${d.humidity.toFixed(1)}</td><td>${d.soilMoisture.toFixed(1)}</td></tr>`).join('');
+            } catch(e) {}
+        }
+        fetchHistory();
+    </script>
+</body>
+</html>

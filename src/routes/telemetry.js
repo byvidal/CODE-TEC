@@ -1,23 +1,26 @@
-const express = require('express');
-const router = express.Router();
+const router = require('express').Router();
 const telemetryService = require('../services/telemetryService');
-const telemetryRepo = require('../repositories/telemetryRepository');
+const { authenticateDevice } = require('../middleware/authentication');
+const { telemetryRateLimit } = require('../middleware/rateLimit');
+const repo = require('../repositories/telemetryRepository');
 
-router.post('/readings', async (req, res, next) => {
+router.post('/readings', telemetryRateLimit, authenticateDevice, async (req, res, next) => {
     try {
-        const result = await telemetryService.processReading(req.body);
+        const result = await telemetryService.processReading(req.body, req.device);
         res.json(result);
     } catch (err) {
-        res.status(400).json({ accepted: false, error: err.message });
+        next(err);
     }
 });
-
-router.get('/latest', async (req, res) => {
-    res.json(await telemetryRepo.getLatest());
+router.get('/latest', async (req, res, next) => {
+    try {
+        res.json(await repo.getLatest(req.query.greenhouseId));
+    } catch(err) { next(err); }
 });
-
-router.get('/history', async (req, res) => {
-    res.json(await telemetryRepo.getHistory());
+router.get('/history', async (req, res, next) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit) || 100, 1000);
+        res.json(await repo.getHistory(req.query.zoneId, limit));
+    } catch(err) { next(err); }
 });
-
 module.exports = router;

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Automatización - Greenhouse Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    
+<div class="navbar">
+    <div>
+        <a href="dashboard.html">🌱 Greenhouse Monitor</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="zone.html">Zonas</a>
+        <a href="alerts.html">Alertas</a>
+        <a href="history.html">Historial</a>
+        <a href="actuators.html">Actuadores</a>
+        <a href="automation.html">Automatización</a>
+        <a href="settings.html">Configuración</a>
+    </div>
+    <div>
+        <span style="background: #e67e22; padding: 5px 10px; border-radius: 4px; font-size: 12px;">PROTOTIPO HACKATÓN</span>
+    </div>
+</div>
+
+    <div class="container">
+        <h2>Reglas de Automatización (Motor Lógico)</h2>
+        <div class="card">
+            <h3>Regla: Humedad Baja</h3>
+            <p>Si la humedad del sustrato cae por debajo del 35%, activar la bomba de riego (siempre que el tanque > 15%).</p>
+            <p><strong style="color:green;">Estado: ACTIVA</strong></p>
+        </div>
+        <div class="card">
+            <h3>Regla: Sobrecalentamiento</h3>
+            <p>Si la temperatura supera 30°C, encender ventilador.</p>
+            <p><strong style="color:green;">Estado: ACTIVA</strong></p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,38 +1,37 @@
 const http = require('http');
-const SERVER_URL = 'http://localhost:3000/api/telemetry/readings';
+
+const args = process.argv.slice(2);
+let scenario = 'normal';
+args.forEach(a => { if (a.startsWith('--scenario=')) scenario = a.split('=')[1]; });
 
 let soilMoisture = 60;
-let temp = 25;
-let water = 80;
+let temperature = 25;
+let waterLevel = 80;
+let humidity = 50;
+
+if (scenario === 'soil-dry') { soilMoisture = 30; }
+if (scenario === 'heat') { temperature = 35; }
+if (scenario === 'low-water') { waterLevel = 10; }
+
+console.log(`Starting simulator in ${scenario} mode...`);
 
 const sendReading = () => {
-    // Random variations
-    soilMoisture -= Math.random() * 2; // slowly dries
-    if (soilMoisture < 20) soilMoisture = 20; // stay low to trigger alert
-    
+    if (scenario === 'disconnect') return; // Do not send data
+
     const data = {
         greenhouseId: "greenhouse_01",
         zoneId: "zone_a",
         deviceId: "device_esp32_01",
-        timestamp: new Date().toISOString(),
-        readings: {
-            temperature: temp + (Math.random() * 2 - 1),
-            humidity: 50 + (Math.random() * 10 - 5),
-            soilMoisture: soilMoisture,
-            light: 800 + (Math.random() * 100 - 50),
-            waterLevel: water
-        }
+        readings: { temperature, humidity, soilMoisture, light: 800, waterLevel }
     };
     
-    const req = http.request(SERVER_URL, {
+    const req = http.request('http://localhost:3000/api/telemetry/readings', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer demo-device-token' }
     }, (res) => {
         let body = '';
         res.on('data', chunk => body += chunk);
-        res.on('end', () => console.log('Sent:', data.readings.soilMoisture.toFixed(2), 'Res:', body));
+        res.on('end', () => console.log('Res:', res.statusCode, body));
     });
     
     req.on('error', e => console.error(e.message));
@@ -40,5 +39,5 @@ const sendReading = () => {
     req.end();
 };
 
-console.log("Starting simulator...");
-setInterval(sendReading, 5000);
+setInterval(sendReading, parseInt(process.env.SIMULATOR_INTERVAL_MS) || 3000);
+sendReading();

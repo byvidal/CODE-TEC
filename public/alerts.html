@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Alertas - Greenhouse Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    
+<div class="navbar">
+    <div>
+        <a href="dashboard.html">🌱 Greenhouse Monitor</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="zone.html">Zonas</a>
+        <a href="alerts.html">Alertas</a>
+        <a href="history.html">Historial</a>
+        <a href="actuators.html">Actuadores</a>
+        <a href="automation.html">Automatización</a>
+        <a href="settings.html">Configuración</a>
+    </div>
+    <div>
+        <span style="background: #e67e22; padding: 5px 10px; border-radius: 4px; font-size: 12px;">PROTOTIPO HACKATÓN</span>
+    </div>
+</div>
+
+    <div class="container">
+        <h2>Centro de Alertas</h2>
+        <div class="card">
+            <table>
+                <thead><tr><th>Fecha</th><th>Severidad</th><th>Mensaje</th><th>Acción</th></tr></thead>
+                <tbody id="alerts-tbody">
+                    <tr><td colspan="4">Cargando alertas...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        async function fetchAlerts() {
+            try {
+                const res = await fetch('/api/alerts/active');
+                const alerts = await res.json();
+                const tbody = document.getElementById('alerts-tbody');
+                if (alerts.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4">No hay alertas activas.</td></tr>';
+                } else {
+                    tbody.innerHTML = alerts.map(a => `<tr><td>${new Date(a.createdAt).toLocaleString()}</td><td>${a.severity}</td><td>${a.message}</td><td><button class="btn btn-secondary" onclick="resolve('${a.id}')">Resolver</button></td></tr>`).join('');
+                }
+            } catch(e) {}
+        }
+        async function resolve(id) {
+            await fetch('/api/alerts/' + id + '/resolve', { method: 'POST' });
+            fetchAlerts();
+        }
+        fetchAlerts();
+    </script>
+</body>
+</html>

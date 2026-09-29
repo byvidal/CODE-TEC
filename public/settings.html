@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Configuración - Greenhouse Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    
+<div class="navbar">
+    <div>
+        <a href="dashboard.html">🌱 Greenhouse Monitor</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="zone.html">Zonas</a>
+        <a href="alerts.html">Alertas</a>
+        <a href="history.html">Historial</a>
+        <a href="actuators.html">Actuadores</a>
+        <a href="automation.html">Automatización</a>
+        <a href="settings.html">Configuración</a>
+    </div>
+    <div>
+        <span style="background: #e67e22; padding: 5px 10px; border-radius: 4px; font-size: 12px;">PROTOTIPO HACKATÓN</span>
+    </div>
+</div>
+
+    <div class="container">
+        <h2>Plan y Configuración</h2>
+        <div class="card">
+            <h3>Suscripción Actual</h3>
+            <p><strong>Plan:</strong> Demo</p>
+            <p><strong>Estado:</strong> Activo</p>
+            <p>Límites: 1 invernadero, 1 mes de historial.</p>
+            <button class="btn btn-secondary">Hacer Upgrade (Mock)</button>
+        </div>
+        <div class="card">
+            <h3>Modo Demo / Reset</h3>
+            <p>Resetea la base de datos a los valores iniciales para repetir la presentación.</p>
+            <button class="btn btn-danger" onclick="resetDB()">Ejecutar Reset</button>
+        </div>
+    </div>
+    <script>
+        async function resetDB() {
+            const res = await fetch('/api/demo/reset', { method: 'POST' });
+            alert("Reset ejecutado. (Revisa la consola del backend para ver db:reset)");
+        }
+    </script>
+</body>
+</html>
