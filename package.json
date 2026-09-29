@@ -5,7 +5,11 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "test": "node --test",
+    "simulator": "node simulator/index.js",
+    "db:init": "node scripts/seed-db.js",
+    "db:seed": "node scripts/seed-db.js"
   },
   "keywords": [
     "agricultura",
@@ -17,10 +21,10 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "pdfkit": "^0.15.2"
-  },
-  "devDependencies": {}
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.3",
+    "pdfkit": "^0.15.2",
+    "sqlite3": "^6.0.1"
+  }
 }

@@ -1,51 +1,37 @@
-require("dotenv").config();
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
 
-const path = require("path");
-const cors = require("cors");
-const express = require("express");
-const apiRouter = require("./routes/api");
+const healthRoutes = require('./routes/health');
+const greenhouseRoutes = require('./routes/greenhouses');
+const telemetryRoutes = require('./routes/telemetry');
+const alertRoutes = require('./routes/alerts');
+const actuatorRoutes = require('./routes/actuators');
+const billingRoutes = require('./routes/billing');
+const demoRoutes = require('./routes/demo');
+const eventRoutes = require('./routes/events');
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
-const PORT = Number(process.env.PORT || 3000);
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "..", "public")));
-app.use("/api", apiRouter);
+app.use(express.static(path.join(__dirname, '../public')));
 
-app.use((request, response, next) => {
-  if (request.path.startsWith("/api")) {
-    response.status(404).json({
-      error: "Ruta de API no encontrada."
-    });
-    return;
-  }
+// Routes
+app.use('/api/health', healthRoutes);
+app.use('/api/greenhouses', greenhouseRoutes);
+app.use('/api/telemetry', telemetryRoutes);
+app.use('/api/alerts', alertRoutes);
+app.use('/api/actuators', actuatorRoutes);
+app.use('/api/billing', billingRoutes);
+app.use('/api/demo', demoRoutes);
+app.use('/api/events', eventRoutes);
 
-  next();
-});
-
-app.use((error, _request, response, _next) => {
-  console.error("Error:", error.message);
-  const statusCode = error.statusCode || 400;
-  const payload = {
-    error: error.message || "Ocurrio un error inesperado."
-  };
-
-  if (error.code) {
-    payload.code = error.code;
-  }
-
-  if (error.membership) {
-    payload.membership = error.membership;
-  }
-
-  if (error.plans) {
-    payload.plans = error.plans;
-  }
-
-  response.status(statusCode).json(payload);
-});
+app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`PDA disponible en http://localhost:${PORT}`);
+    console.log(`Greenhouse Monitor API running on http://localhost:${PORT}`);
 });

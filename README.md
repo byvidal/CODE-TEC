@@ -1,60 +1,37 @@
-# PDA (Plataforma de Apoyo Agricola)
+# Greenhouse Monitor
 
-Aplicacion web de hackaton para agricultores. Genera recomendaciones de cultivo, plan agricola y estimaciones de produccion usando geolocalizacion, clima real de Open-Meteo y datos de cultivos.
+Sistema de adquisición de datos, telemetría y teleprocesos para invernaderos inteligentes.
+Recibe datos de sensores (simulados en Wokwi o Node.js), los valida, almacena, y los muestra en un dashboard en tiempo real. 
+Genera alertas y simula el control de actuadores de forma automática o manual.
 
-## Funcionalidades
-
-- Geolocalizacion desde el navegador.
-- Selección de ubicación en mapa con geocodificación inversa (Nominatim/OpenStreetMap).
-- Clima actual y pronostico basico con Open-Meteo.
-- Selección manual de tipo y fertilidad de suelo.
-- Integración opcional con API de plantas Perenual mediante variables de entorno.
-- Catalogo local de cultivos como respaldo.
-- Reglas de recomendaciones agricolas.
-- Plan automatico de riego, fertilizacion y cuidados.
-- Generacion de PDF con clima, cultivo, plan, recomendaciones y estimacion.
-- Calculo de produccion:
-
-```text
-Produccion Total = Tamano del Terreno x (Rendimiento Teorico x Cc x Cf)
-```
-
-## Inicio rapido
+## Instalación
 
 ```bash
 npm install
-npm run dev
 ```
 
-Abre `http://localhost:3000`.
+## Configuración y Ejecución
 
-## Variables de entorno
+1. Inicializar la base de datos (SQLite):
+   ```bash
+   npm run db:seed
+   ```
+2. Iniciar el servidor backend y frontend:
+   ```bash
+   npm start
+   ```
+   (El servidor corre en http://localhost:3000)
 
-Copia `.env.example` a `.env` y ajusta:
+## Simulación de Telemetría
 
+Puedes enviar datos al servidor utilizando el simulador incluido en Node.js:
 ```bash
-PORT=3000
-OPEN_METEO_BASE_URL=https://api.open-meteo.com/v1/forecast
-PERENUAL_API_URL=https://perenual.com/api/v2
-PERENUAL_API_KEY=
-NOMINATIM_BASE_URL=https://nominatim.openstreetmap.org/reverse
-NOMINATIM_USER_AGENT=PDA/1.0 (https://github.com/byvidal/CODE-TEC)
+npm run simulator
 ```
 
-Open-Meteo no requiere API key para esta implementacion. Perenual requiere `PERENUAL_API_KEY`; si falla o no existe, se usa el catalogo local.
-La geocodificación inversa utiliza Nominatim (OpenStreetMap) y permite configurar un `NOMINATIM_USER_AGENT` identificable.
+También puedes usar **Wokwi** cargando los archivos de la carpeta `wokwi/`.
 
-## Estructura
-
-```text
-src/
-  server.js
-  routes/
-  services/
-  data/
-  utils/
-public/
-  index.html
-  styles.css
-  app.js
+## Pruebas
+```bash
+npm test
 ```
