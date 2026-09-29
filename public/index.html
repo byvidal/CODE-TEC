@@ -258,6 +258,7 @@ footer{padding:32px 0 48px;color:var(--muted);font-size:.9rem;border-top:1px sol
       e.preventDefault();
       var email = $('login-email').value;
       if (email.includes('@')) {
+          localStorage.setItem('edafonex_auth', 'true');
         window.location.href = 'dashboard.html';
       } else {
         $('login-error').style.display = 'block';

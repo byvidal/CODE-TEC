@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <script>
+    // Security Auth Check
+    if (localStorage.getItem('edafonex_auth') !== 'true') {
+        window.location.replace('index.html#login');
+    }
+</script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zonas - EDAFONEX</title>
