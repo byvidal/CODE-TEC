@@ -2,39 +2,298 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Automatización - Greenhouse Monitor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automatización - EDAFONEX</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Toggle Switches */
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--line); border-radius: 24px; transition: .3s; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        input:checked + .slider { background-color: var(--leaf); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        body { background-color: var(--bg, #f4f6f8); font-family: var(--body, system-ui, sans-serif); margin: 0; padding: 0; color: var(--ink, #333); }
+        :root {
+            --leaf: #10b981; --leaf-dark: #059669; --water: #3b82f6; --soil: #b45309; --danger: #ef4444; --warn: #f59e0b;
+            --panel: #ffffff; --line: #e5e7eb; --muted: #6b7280; --ink: #111827; --bg: #f9fafb; --display: 'Inter', system-ui, sans-serif;
+        }
+        header { background: #fff; padding: 15px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .brand { font: 800 1.2rem var(--display); text-decoration: none; display: flex; align-items: center; gap: 10px; color: var(--ink); }
+        .brand svg { width: 24px; height: 24px; }
+        .nav-links { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .nav-links a { margin-left: 10px; text-decoration: none; color: var(--muted); font-weight: 500; transition: color 0.2s; }
+        .nav-links a:hover, .nav-links a.active { color: var(--leaf-dark); }
+        .wrap-dash { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+        .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 30px; }
+        .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 15px; }
+        .panel-head strong { font: 700 1.3rem var(--display); color: var(--ink); }
+        
+        /* Tables */
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; text-align: left; }
+        th { font-weight: 600; color: var(--muted); padding: 12px; border-bottom: 2px solid var(--line); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { padding: 16px 12px; border-bottom: 1px solid var(--line); color: var(--ink); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: color-mix(in srgb, var(--line) 20%, transparent); }
+        
+        /* Badges & Buttons */
+        .btn { display: inline-block; font: 700 1rem var(--display); text-decoration: none; padding: 12px 24px; border-radius: 10px; background: var(--leaf); color: #fff; cursor: pointer; border: none; transition: background 0.2s; }
+        .btn:hover { background: var(--leaf-dark); }
+        .btn-sm { padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
+        .btn-green { background: color-mix(in srgb, var(--leaf) 15%, transparent); color: var(--leaf-dark); }
+        .btn-green:hover { background: color-mix(in srgb, var(--leaf) 25%, transparent); }
+        .btn-danger { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+        .badge { padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; display: inline-block; }
+        .badge-danger { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+        .badge-warn { background: color-mix(in srgb, var(--warn) 15%, transparent); color: var(--warn); }
+        .badge-safe { background: color-mix(in srgb, var(--leaf) 15%, transparent); color: var(--leaf-dark); }
+        
+        /* Grids */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media(max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+    
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+</style>
 </head>
 <body>
-    
-<div class="navbar">
-    <div>
-        <a href="dashboard.html">🌱 Greenhouse Monitor</a>
+<header>
+    <a class="brand" href="dashboard.html">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 29V15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M16 17C16 10 11 6 4 6c0 7 4 11 12 11Z" fill="var(--leaf)"/><path d="M16 14c0-6 4-9 11-9 0 6-4 9-11 9Z" fill="var(--water)"/></svg>
+        EDAFONEX
+    </a>
+    <div class="nav-links">
         <a href="dashboard.html">Dashboard</a>
         <a href="zone.html">Zonas</a>
         <a href="alerts.html">Alertas</a>
         <a href="history.html">Historial</a>
         <a href="actuators.html">Actuadores</a>
-        <a href="automation.html">Automatización</a>
+        <a href="automation.html" class="active">Automatización</a>
         <a href="settings.html">Configuración</a>
     </div>
-    <div>
+</header>
+<div class="wrap-dash">
+    <div class="panel">
+        <div class="panel-head" style="margin-bottom: 5px;">
+            <strong>Motor de Reglas y Automatización</strong>
+            <button class="btn-sm btn-green" onclick="document.getElementById('new-rule-modal').showModal()">+ Nueva Regla</button>
+        </div>
+        <p style="color:var(--muted); margin-top:-5px; margin-bottom:25px;">El sistema evalúa estas reglas continuamente. Cada condición cumplida dispara una acción de control o alerta en milisegundos.</p>
         
+        <div class="rules-list">
+            <!-- Rule 1 -->
+            <div class="rule-card" id="rule-1" style="border: 1px solid var(--line); border-radius: 12px; padding: 25px; margin-bottom: 20px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.01); transition: all 0.3s;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                    <div style="display:flex; align-items:center; gap: 10px;">
+                        <span class="rule-led" style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--leaf); transition: background 0.3s;"></span>
+                        <h3 class="rule-title" style="margin:0; font-size:1.2rem; color:var(--ink); transition: color 0.3s;">Riego Automático (Humedad Baja)</h3>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked onchange="toggleRule('rule-1', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="rule-box rule-box-cond" style="background:var(--bg); border-radius:8px; padding:15px; margin-bottom:15px; border-left: 4px solid var(--water); transition: all 0.3s;">
+                    <div style="margin-bottom:8px;"><strong style="color:var(--muted); font-size:0.85rem; text-transform:uppercase;">SI LA CONDICIÓN ES:</strong></div>
+                    <div class="rule-text" style="font-weight:500; color:var(--ink);">Humedad del sustrato cae por debajo del <span class="val-color" style="color:var(--water);">35%</span></div>
+                    <div class="rule-text" style="font-weight:500; color:var(--ink); margin-top:5px;">Y el nivel del tanque es mayor al <span class="val-color" style="color:var(--water);">15%</span></div>
+                </div>
+                
+                <div class="rule-box rule-box-act" style="background:var(--bg); border-radius:8px; padding:15px; border-left: 4px solid var(--leaf); transition: all 0.3s;">
+                    <div style="margin-bottom:8px;"><strong style="color:var(--muted); font-size:0.85rem; text-transform:uppercase;">ENTONCES EJECUTAR:</strong></div>
+                    <div class="rule-text" style="font-weight:500; color:var(--ink);">Activar <span class="val-color2" style="color:var(--leaf-dark);">Bomba de Riego (pump_01)</span></div>
+                </div>
+            </div>
+
+            <!-- Rule 2 -->
+            <div class="rule-card" id="rule-2" style="border: 1px solid var(--line); border-radius: 12px; padding: 25px; margin-bottom: 20px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.01); transition: all 0.3s;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                    <div style="display:flex; align-items:center; gap: 10px;">
+                        <span class="rule-led" style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--leaf); transition: background 0.3s;"></span>
+                        <h3 class="rule-title" style="margin:0; font-size:1.2rem; color:var(--ink); transition: color 0.3s;">Protección de Hardware (Tanque Crítico)</h3>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked onchange="toggleRule('rule-2', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="rule-box rule-box-cond" style="background:var(--bg); border-radius:8px; padding:15px; margin-bottom:15px; border-left: 4px solid var(--danger); transition: all 0.3s;">
+                    <div style="margin-bottom:8px;"><strong style="color:var(--muted); font-size:0.85rem; text-transform:uppercase;">SI LA CONDICIÓN ES:</strong></div>
+                    <div class="rule-text" style="font-weight:500; color:var(--ink);">Nivel del tanque cae por debajo del <span class="val-color" style="color:var(--danger);">15%</span></div>
+                </div>
+                
+                <div class="rule-box rule-box-act" style="background:var(--bg); border-radius:8px; padding:15px; border-left: 4px solid var(--leaf); transition: all 0.3s;">
+                    <div style="margin-bottom:8px;"><strong style="color:var(--muted); font-size:0.85rem; text-transform:uppercase;">ENTONCES EJECUTAR:</strong></div>
+                    <div class="rule-text" style="font-weight:500; color:var(--ink);">Forzar apagado de <span class="val-color2" style="color:var(--leaf-dark);">Bomba de Riego (pump_01)</span> y bloquear comandos.</div>
+                </div>
+            </div>
+
+            <!-- Rule 3 -->
+            <div class="rule-card" id="rule-3" style="border: 1px solid var(--line); border-radius: 12px; padding: 25px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.01); transition: all 0.3s;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                    <div style="display:flex; align-items:center; gap: 10px;">
+                        <span class="rule-led" style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--leaf); transition: background 0.3s;"></span>
+                        <h3 class="rule-title" style="margin:0; font-size:1.2rem; color:var(--ink); transition: color 0.3s;">Ventilación por Sobrecalentamiento</h3>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked onchange="toggleRule('rule-3', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="rule-box rule-box-cond" style="background:var(--bg); border-radius:8px; padding:15px; margin-bottom:15px; border-left: 4px solid var(--warn); transition: all 0.3s;">
+                    <div style="margin-bottom:8px;"><strong style="color:var(--muted); font-size:0.85rem; text-transform:uppercase;">SI LA CONDICIÓN ES:</strong></div>
+                    <div class="rule-text" style="font-weight:500; color:var(--ink);">Temperatura ambiental supera los <span class="val-color" style="color:var(--warn);">30°C</span></div>
+                </div>
+                
+                <div class="rule-box rule-box-act" style="background:var(--bg); border-radius:8px; padding:15px; border-left: 4px solid var(--leaf); transition: all 0.3s;">
+                    <div style="margin-bottom:8px;"><strong style="color:var(--muted); font-size:0.85rem; text-transform:uppercase;">ENTONCES EJECUTAR:</strong></div>
+                    <div class="rule-text" style="font-weight:500; color:var(--ink);">Activar <span class="val-color2" style="color:var(--leaf-dark);">Ventiladores (fan_01)</span> y abrir <span class="val-color2" style="color:var(--leaf-dark);">Ventana Automática (window_01)</span></div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+<script>
+    function toggleRule(ruleId, isChecked) {
+        const card = document.getElementById(ruleId);
+        if(!card) return;
+        
+        const led = card.querySelector('.rule-led');
+        const title = card.querySelector('.rule-title');
+        const boxes = card.querySelectorAll('.rule-box');
+        const texts = card.querySelectorAll('.rule-text');
+        const valColors = card.querySelectorAll('.val-color, .val-color2');
+        
+        if (isChecked) {
+            // Restore colors
+            card.style.opacity = '1';
+            led.style.background = 'var(--leaf)';
+            title.style.color = 'var(--ink)';
+            texts.forEach(t => t.style.color = 'var(--ink)');
+            
+            // Re-apply left borders based on condition type (hacky but visually works for demo)
+            boxes.forEach(b => {
+                b.style.borderColor = ''; // reset to stylesheet
+                b.style.filter = 'none';
+            });
+            valColors.forEach(vc => vc.style.filter = 'none');
+            
+        } else {
+            // Dim colors (Inactive state)
+            card.style.opacity = '0.65';
+            led.style.background = 'var(--line)';
+            title.style.color = 'var(--muted)';
+            texts.forEach(t => t.style.color = 'var(--muted)');
+            
+            // Make borders gray
+            boxes.forEach(b => {
+                b.style.borderColor = 'var(--line)';
+                b.style.filter = 'grayscale(100%)';
+            });
+            valColors.forEach(vc => vc.style.filter = 'grayscale(100%)');
+        }
+    }
 
-    <div class="container">
-        <h2>Reglas de Automatización (Motor Lógico)</h2>
-        <div class="card">
-            <h3>Regla: Humedad Baja</h3>
-            <p>Si la humedad del sustrato cae por debajo del 35%, activar la bomba de riego (siempre que el tanque > 15%).</p>
-            <p><strong style="color:green;">Estado: ACTIVA</strong></p>
-        </div>
-        <div class="card">
-            <h3>Regla: Sobrecalentamiento</h3>
-            <p>Si la temperatura supera 30°C, encender ventilador.</p>
-            <p><strong style="color:green;">Estado: ACTIVA</strong></p>
-        </div>
-    </div>
+    let ruleCounter = 3;
+
+    document.getElementById('new-rule-form').onsubmit = function(e) {
+        e.preventDefault();
+        
+        ruleCounter++;
+        const ruleId = 'rule-' + ruleCounter;
+        const name = document.getElementById('r-name').value;
+        const sensor = document.getElementById('r-sensor').value;
+        const operator = document.getElementById('r-operator').options[document.getElementById('r-operator').selectedIndex].text;
+        const val = document.getElementById('r-value').value;
+        const action = document.getElementById('r-action').value;
+        
+        let condColor = 'var(--warn)';
+        if(sensor === 'Humedad Suelo') condColor = 'var(--water)';
+        if(sensor === 'Nivel Tanque') condColor = 'var(--danger)';
+
+        const newCard = `
+            <div class="rule-card" id="${ruleId}" style="border: 1px solid var(--line); border-radius: 12px; padding: 25px; margin-bottom: 20px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.01); transition: all 0.3s; animation: fadeIn 0.5s;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                    <div style="display:flex; align-items:center; gap: 10px;">
+                        <span class="rule-led" style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--leaf); transition: background 0.3s;"></span>
+                        <h3 class="rule-title" style="margin:0; font-size:1.2rem; color:var(--ink); transition: color 0.3s;">${name}</h3>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked onchange="toggleRule('${ruleId}', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="rule-box rule-box-cond" style="background:var(--bg); border-radius:8px; padding:15px; margin-bottom:15px; border-left: 4px solid ${condColor}; transition: all 0.3s;">
+                    <div style="margin-bottom:8px;"><strong style="color:var(--muted); font-size:0.85rem; text-transform:uppercase;">SI LA CONDICIÓN ES:</strong></div>
+                    <div class="rule-text" style="font-weight:500; color:var(--ink);">${sensor} es ${operator} a <span class="val-color" style="color:${condColor};">${val}</span></div>
+                </div>
+                
+                <div class="rule-box rule-box-act" style="background:var(--bg); border-radius:8px; padding:15px; border-left: 4px solid var(--leaf); transition: all 0.3s;">
+                    <div style="margin-bottom:8px;"><strong style="color:var(--muted); font-size:0.85rem; text-transform:uppercase;">ENTONCES EJECUTAR:</strong></div>
+                    <div class="rule-text" style="font-weight:500; color:var(--ink);"><span class="val-color2" style="color:var(--leaf-dark);">${action}</span></div>
+                </div>
+            </div>
+        `;
+        
+        document.querySelector('.rules-list').insertAdjacentHTML('beforeend', newCard);
+        
+        document.getElementById('new-rule-modal').close();
+        document.getElementById('new-rule-form').reset();
+    };
+</script>
 </body>
 </html>
+
+    <!-- Modal Nueva Regla -->
+    <dialog id="new-rule-modal" class="modal" style="border: none; border-radius: 12px; padding: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 550px; width: 90%; background: var(--bg); color: var(--ink);">
+        <div style="padding: 25px;">
+            <span class="close" onclick="document.getElementById('new-rule-modal').close()" style="position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: var(--muted);">&times;</span>
+            <h2 style="margin-top:0; font-size: 1.5rem;">Construir Nueva Regla</h2>
+            <p style="color:var(--muted); font-size:0.9rem; margin-top:-10px; margin-bottom:20px;">Define la condición ("IF") y la acción resultante ("THEN").</p>
+            
+            <form id="new-rule-form">
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; font-weight:500; margin-bottom:5px;">Nombre de la Regla</label>
+                    <input type="text" id="r-name" required placeholder="Ej. Riego de emergencia" style="width:100%; padding:10px; border:1px solid var(--line); border-radius:6px; box-sizing:border-box;">
+                </div>
+                
+                <div style="background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:15px; margin-bottom:15px; border-left: 4px solid var(--warn);">
+                    <strong style="display:block; color:var(--muted); font-size:0.85rem; margin-bottom:10px;">CONDICIÓN (IF)</strong>
+                    <div style="display:flex; gap:10px;">
+                        <select id="r-sensor" style="flex:2; padding:8px; border:1px solid var(--line); border-radius:6px;">
+                            <option value="Temperatura">Temperatura</option>
+                            <option value="Humedad Suelo">Humedad Suelo</option>
+                            <option value="Nivel Tanque">Nivel Tanque</option>
+                        </select>
+                        <select id="r-operator" style="flex:1; padding:8px; border:1px solid var(--line); border-radius:6px;">
+                            <option value="mayor a">></option>
+                            <option value="menor a"><</option>
+                        </select>
+                        <input type="number" id="r-value" required placeholder="Ej. 30" style="flex:1; padding:8px; border:1px solid var(--line); border-radius:6px;">
+                    </div>
+                </div>
+
+                <div style="background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:15px; margin-bottom:25px; border-left: 4px solid var(--leaf);">
+                    <strong style="display:block; color:var(--muted); font-size:0.85rem; margin-bottom:10px;">ACCIÓN (THEN)</strong>
+                    <select id="r-action" style="width:100%; padding:10px; border:1px solid var(--line); border-radius:6px;">
+                        <option value="Activar Bomba de Riego">Activar Bomba de Riego</option>
+                        <option value="Apagar Bomba de Riego">Apagar Bomba de Riego</option>
+                        <option value="Activar Ventilador">Activar Ventilador</option>
+                        <option value="Abrir Ventana Automática">Abrir Ventana Automática</option>
+                        <option value="Enviar Alerta a WhatsApp">Solo Enviar Alerta a WhatsApp</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn" style="width: 100%;">Guardar y Activar Regla</button>
+            </form>
+        </div>
+    </dialog>
+

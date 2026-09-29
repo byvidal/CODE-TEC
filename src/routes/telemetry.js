@@ -20,7 +20,7 @@ router.get('/latest', async (req, res, next) => {
 router.get('/history', async (req, res, next) => {
     try {
         const limit = Math.min(parseInt(req.query.limit) || 100, 1000);
-        res.json(await repo.getHistory(req.query.zoneId, limit));
+        res.json(await repo.getHistory(req.query.zoneId, limit, req.query.startDate, req.query.endDate));
     } catch(err) { next(err); }
 });
 module.exports = router;

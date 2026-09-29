@@ -2,47 +2,136 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Configuración - Greenhouse Monitor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración - EDAFONEX</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        body { background-color: var(--bg, #f4f6f8); font-family: var(--body, system-ui, sans-serif); margin: 0; padding: 0; color: var(--ink, #333); }
+        :root {
+            --leaf: #10b981; --leaf-dark: #059669; --water: #3b82f6; --soil: #b45309; --danger: #ef4444; --warn: #f59e0b;
+            --panel: #ffffff; --line: #e5e7eb; --muted: #6b7280; --ink: #111827; --bg: #f9fafb; --display: 'Inter', system-ui, sans-serif;
+        }
+        header { background: #fff; padding: 15px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .brand { font: 800 1.2rem var(--display); text-decoration: none; display: flex; align-items: center; gap: 10px; color: var(--ink); }
+        .brand svg { width: 24px; height: 24px; }
+        .nav-links { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .nav-links a { margin-left: 10px; text-decoration: none; color: var(--muted); font-weight: 500; transition: color 0.2s; }
+        .nav-links a:hover, .nav-links a.active { color: var(--leaf-dark); }
+        .wrap-dash { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+        .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 30px; }
+        .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 15px; }
+        .panel-head strong { font: 700 1.3rem var(--display); color: var(--ink); }
+        
+        /* Tables */
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; text-align: left; }
+        th { font-weight: 600; color: var(--muted); padding: 12px; border-bottom: 2px solid var(--line); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { padding: 16px 12px; border-bottom: 1px solid var(--line); color: var(--ink); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: color-mix(in srgb, var(--line) 20%, transparent); }
+        
+        /* Badges & Buttons */
+        .btn { display: inline-block; font: 700 1rem var(--display); text-decoration: none; padding: 12px 24px; border-radius: 10px; background: var(--leaf); color: #fff; cursor: pointer; border: none; transition: background 0.2s; }
+        .btn:hover { background: var(--leaf-dark); }
+        .btn-sm { padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
+        .btn-green { background: color-mix(in srgb, var(--leaf) 15%, transparent); color: var(--leaf-dark); }
+        .btn-green:hover { background: color-mix(in srgb, var(--leaf) 25%, transparent); }
+        .btn-danger { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+        .badge { padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; display: inline-block; }
+        .badge-danger { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+        .badge-warn { background: color-mix(in srgb, var(--warn) 15%, transparent); color: var(--warn); }
+        .badge-safe { background: color-mix(in srgb, var(--leaf) 15%, transparent); color: var(--leaf-dark); }
+        
+        /* Grids */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media(max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+    </style>
 </head>
 <body>
-    
-<div class="navbar">
-    <div>
-        <a href="dashboard.html">🌱 Greenhouse Monitor</a>
+<header>
+    <a class="brand" href="dashboard.html">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 29V15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M16 17C16 10 11 6 4 6c0 7 4 11 12 11Z" fill="var(--leaf)"/><path d="M16 14c0-6 4-9 11-9 0 6-4 9-11 9Z" fill="var(--water)"/></svg>
+        EDAFONEX
+    </a>
+    <div class="nav-links">
         <a href="dashboard.html">Dashboard</a>
         <a href="zone.html">Zonas</a>
         <a href="alerts.html">Alertas</a>
         <a href="history.html">Historial</a>
         <a href="actuators.html">Actuadores</a>
         <a href="automation.html">Automatización</a>
-        <a href="settings.html">Configuración</a>
+        <a href="settings.html" class="active">Configuración</a>
     </div>
-    <div>
-        
-    </div>
-</div>
+</header>
+<div class="wrap-dash">
 
-    <div class="container">
-        <h2>Plan y Configuración</h2>
-        <div class="card">
-            <h3>Suscripción Actual</h3>
-            <p><strong>Plan:</strong> Profesional</p>
-            <p><strong>Estado:</strong> Activo</p>
-            <p>Límites: 1 invernadero, 1 mes de historial.</p>
-            <button class="btn btn-secondary">Gestionar Suscripción</button>
+    <div class="grid-2">
+        <div class="panel">
+            <div class="panel-head">
+                <strong>Suscripción Actual</strong>
+            </div>
+            <div style="text-align:center; padding: 20px 0;">
+                <span class="badge badge-safe" style="font-size:1.2rem; margin-bottom: 15px;">Plan Profesional</span>
+                <h2 style="font-size:2.5rem; margin:0; color:var(--leaf);">$1,299<span style="font-size:1rem; color:var(--muted);">/mes</span></h2>
+            </div>
+            <ul style="color:var(--muted); line-height:1.8;">
+                <li>Sensores Industriales (SHT31, MHZ19)</li>
+                <li>Notificaciones vía WhatsApp</li>
+                <li>12 meses de historial de telemetría</li>
+            </ul>
+            <button class="btn" style="width:100%; margin-top:20px; background:var(--water);">Gestionar Suscripción</button>
         </div>
-        <div class="card">
-            <h3>Restablecer Configuración</h3>
-            <p>Devuelve los parámetros del sistema a su estado de fábrica.</p>
-            <button class="btn btn-danger" onclick="resetDB()">Ejecutar Reset</button>
+
+        
+        <div class="panel" style="border-color: var(--leaf); grid-column: 1 / -1;">
+            <div class="panel-head">
+                <strong style="color: var(--leaf-dark);">Integración WhatsApp API</strong>
+                <span class="badge badge-safe">Conectado</span>
+            </div>
+            <p style="color:var(--muted); margin-bottom: 25px;">Tus alertas están configuradas para ser enviadas al número registrado. Puedes enviar un mensaje de prueba para verificar la conectividad con el API (CallMeBot / Meta).</p>
+            
+            <button class="btn btn-green" style="padding:15px; font-size:1.1rem; width:auto;" onclick="testWhatsApp()">📱 Enviar Mensaje de Prueba a WhatsApp</button>
+        </div>
+
+<div class="panel" style="border-color: var(--danger);">
+            <div class="panel-head">
+                <strong style="color: var(--danger);">Zona de Peligro</strong>
+            </div>
+            <p style="color:var(--muted); margin-bottom: 25px;">Si estás presentando el proyecto de nuevo, puedes devolver la base de datos a sus valores de fábrica. Esto borrará la telemetría y alertas actuales.</p>
+            
+            <button class="btn btn-danger" style="width:100%; padding:15px; font-size:1.1rem;" onclick="resetDB()">⚠️ Restablecer Configuración Inicial</button>
         </div>
     </div>
-    <script>
-        async function resetDB() {
+
+</div>
+<script>
+
+    async function resetDB() {
+        if(confirm("¿Estás seguro de restablecer la base de datos a los valores de fábrica?")) {
             const res = await fetch('/api/demo/reset', { method: 'POST' });
-            alert("Reset ejecutado. (Revisa la consola del backend para ver db:reset)");
+            alert("Sistema restablecido correctamente. Verifica la terminal del servidor.");
+            window.location.href = 'dashboard.html';
         }
-    </script>
+    }
+
+
+    async function testWhatsApp() {
+        try {
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Enviando...';
+            btn.disabled = true;
+            
+            await fetch('/api/demo/whatsapp', { method: 'POST' });
+            
+            setTimeout(() => {
+                alert("Mensaje enviado. Revisa la consola del servidor backend para ver el envío simulado.");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }, 500);
+            
+        } catch(e) {}
+    }
+</script>
 </body>
 </html>

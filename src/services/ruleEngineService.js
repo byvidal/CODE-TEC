@@ -1,6 +1,7 @@
 const alertRepo = require('../repositories/alertRepository');
 const actuatorRepo = require('../repositories/actuatorRepository');
 const eventRepo = require('../repositories/eventRepository');
+const whatsappService = require('./whatsappService');
 const ids = require('../utils/ids');
 const dates = require('../utils/dates');
 
@@ -84,6 +85,11 @@ async function createAlert(greenhouseId, zoneId, deviceId, type, severity, messa
         type: 'ALERT_CREATED', source: 'system', entityId: alert.id,
         previousState: null, newState: 'active', reason: message, createdAt: dates.now()
     });
+
+    // Enviar alerta por WhatsApp
+    const emoji = severity === 'critical' ? '🚨' : '⚠️';
+    const waMessage = `*EDAFONEX ALERT* ${emoji}\n_Invernadero:_ ${greenhouseId}\n_Problema:_ ${message}\n_Revisa el Dashboard de inmediato._`;
+    whatsappService.sendAlert('+521234567890', waMessage).catch(console.error);
     
     return alert;
 }

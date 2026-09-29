@@ -1,69 +1,13 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zonas - EDAFONEX</title>
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        body { background-color: var(--bg, #f4f6f8); font-family: var(--body, system-ui, sans-serif); margin: 0; padding: 0; color: var(--ink, #333); }
-        :root {
-            --leaf: #10b981; --leaf-dark: #059669; --water: #3b82f6; --soil: #b45309; --danger: #ef4444; --warn: #f59e0b;
-            --panel: #ffffff; --line: #e5e7eb; --muted: #6b7280; --ink: #111827; --bg: #f9fafb; --display: 'Inter', system-ui, sans-serif;
-        }
-        header { background: #fff; padding: 15px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
-        .brand { font: 800 1.2rem var(--display); text-decoration: none; display: flex; align-items: center; gap: 10px; color: var(--ink); }
-        .brand svg { width: 24px; height: 24px; }
-        .nav-links { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-        .nav-links a { margin-left: 10px; text-decoration: none; color: var(--muted); font-weight: 500; transition: color 0.2s; }
-        .nav-links a:hover, .nav-links a.active { color: var(--leaf-dark); }
-        .wrap-dash { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
-        .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 30px; }
-        .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 15px; }
-        .panel-head strong { font: 700 1.3rem var(--display); color: var(--ink); }
-        
-        /* Tables */
-        .table-responsive { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; text-align: left; }
-        th { font-weight: 600; color: var(--muted); padding: 12px; border-bottom: 2px solid var(--line); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        td { padding: 16px 12px; border-bottom: 1px solid var(--line); color: var(--ink); }
-        tr:last-child td { border-bottom: none; }
-        tr:hover { background: color-mix(in srgb, var(--line) 20%, transparent); }
-        
-        /* Badges & Buttons */
-        .btn { display: inline-block; font: 700 1rem var(--display); text-decoration: none; padding: 12px 24px; border-radius: 10px; background: var(--leaf); color: #fff; cursor: pointer; border: none; transition: background 0.2s; }
-        .btn:hover { background: var(--leaf-dark); }
-        .btn-sm { padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
-        .btn-green { background: color-mix(in srgb, var(--leaf) 15%, transparent); color: var(--leaf-dark); }
-        .btn-green:hover { background: color-mix(in srgb, var(--leaf) 25%, transparent); }
-        .btn-danger { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
-        .badge { padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; display: inline-block; }
-        .badge-danger { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
-        .badge-warn { background: color-mix(in srgb, var(--warn) 15%, transparent); color: var(--warn); }
-        .badge-safe { background: color-mix(in srgb, var(--leaf) 15%, transparent); color: var(--leaf-dark); }
-        
-        /* Grids */
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media(max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
-    </style>
-</head>
-<body>
-<header>
-    <a class="brand" href="dashboard.html">
-        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 29V15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M16 17C16 10 11 6 4 6c0 7 4 11 12 11Z" fill="var(--leaf)"/><path d="M16 14c0-6 4-9 11-9 0 6-4 9-11 9Z" fill="var(--water)"/></svg>
-        EDAFONEX
-    </a>
-    <div class="nav-links">
-        <a href="dashboard.html">Dashboard</a>
-        <a href="zone.html" class="active">Zonas</a>
-        <a href="alerts.html">Alertas</a>
-        <a href="history.html">Historial</a>
-        <a href="actuators.html">Actuadores</a>
-        <a href="automation.html">Automatización</a>
-        <a href="settings.html">Configuración</a>
-    </div>
-</header>
-<div class="wrap-dash">
+import io
+import os
+
+base_dir = r"c:\Users\ibrya\Documents\TECNM\HakaReg\CODE-TEC\public"
+zone_path = os.path.join(base_dir, 'zone.html')
+
+with io.open(zone_path, 'r', encoding='utf-8') as f:
+    zone_html = f.read()
+
+new_body = """
     <div class="panel">
         <div class="panel-head">
             <strong>Configuración de Zonas</strong>
@@ -112,8 +56,9 @@
             </form>
         </div>
     </dialog>
-</div>
-<script>
+"""
+
+new_js = """
     const GH_ID = 'greenhouse_01'; // Default demo greenhouse
 
     async function fetchZones() {
@@ -179,6 +124,18 @@
     };
 
     fetchZones();
-</script>
-</body>
-</html>
+"""
+
+# Extract wrapping parts
+start_body = zone_html.find('<div class="wrap-dash">') + len('<div class="wrap-dash">')
+end_body = zone_html.find('</div>\n<script>')
+
+start_script = zone_html.find('<script>') + len('<script>')
+end_script = zone_html.find('</script>')
+
+final_html = zone_html[:start_body] + new_body + zone_html[end_body:start_script] + new_js + zone_html[end_script:]
+
+with io.open(zone_path, 'w', encoding='utf-8') as f:
+    f.write(final_html)
+
+print("Zone updated.")

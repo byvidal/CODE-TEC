@@ -1,253 +1,277 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - EDAFONEX</title>
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        body { background-color: var(--bg, #f4f6f8); font-family: var(--body, system-ui, sans-serif); margin: 0; padding: 0; color: var(--ink, #333); }
-        :root {
-            --leaf: #10b981; --leaf-dark: #059669; --water: #3b82f6; --soil: #b45309; --danger: #ef4444; --warn: #f59e0b;
-            --panel: #ffffff; --line: #e5e7eb; --muted: #6b7280; --ink: #111827; --bg: #f9fafb; --display: 'Inter', system-ui, sans-serif;
-        }
-        
-        /* Navbar */
-        header { background: #fff; padding: 15px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
-        .brand { font: 800 1.2rem var(--display); text-decoration: none; display: flex; align-items: center; gap: 10px; color: var(--ink); }
-        .brand svg { width: 24px; height: 24px; }
-        .nav-links a { margin-left: 20px; text-decoration: none; color: var(--muted); font-weight: 500; transition: color 0.2s; }
-        .nav-links a:hover, .nav-links a.active { color: var(--leaf-dark); }
-        
-        /* Dashboard Layout */
-        .wrap-dash { max-width: 1200px; margin: 30px auto; padding: 0 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
-        @media (max-width: 860px) { .wrap-dash { grid-template-columns: 1fr; } }
-        
-        /* Panels */
-        .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 30px; }
-        .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
-        .panel-head strong { font: 700 1.2rem var(--display); color: var(--ink); }
-        .live { display: flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--muted); }
-        .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--leaf); animation: pulse 1.8s infinite; }
-        @keyframes pulse { 50% { opacity: .25 } }
-        
-        /* Telemetry Readings */
-        .reading { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 4px 12px; padding: 14px 0; border-top: 1px solid var(--line); }
-        .reading:first-of-type { border-top: 0; }
-        .reading .name { color: var(--muted); font-size: 1rem; }
-        .reading .val { font: 700 2rem var(--display); font-variant-numeric: tabular-nums; color: var(--ink); }
-        .bar { grid-column: 1 / -1; height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 5px; }
-        .bar i { display: block; height: 100%; width: 0%; background: var(--leaf); border-radius: 4px; transition: width 0.8s, background 0.4s; }
-        
-        /* Alerts & Status */
-        .alert { margin: 20px 0; padding: 15px; border-radius: 10px; font-size: 1rem; font-weight: 500; background: color-mix(in srgb, var(--leaf) 12%, transparent); border: 1px solid color-mix(in srgb, var(--leaf) 35%, transparent); color: var(--leaf-dark); display: flex; align-items: center; gap: 10px; }
-        .alert.hot { background: color-mix(in srgb, var(--danger) 13%, transparent); border-color: color-mix(in srgb, var(--danger) 45%, transparent); color: var(--danger); }
-        
-        /* Controls */
-        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .ctl { font: 500 1rem var(--body); color: var(--ink); background: transparent; border: 2px solid var(--line); border-radius: 12px; padding: 15px; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 8px; transition: all 0.2s; }
-        .ctl:hover { border-color: #ccc; }
-        .ctl[aria-pressed="true"] { border-color: var(--leaf); background: color-mix(in srgb, var(--leaf) 8%, transparent); }
-        .ctl b { font-weight: 700; font-size: 1.2rem; }
-        .ctl span { color: var(--muted); font-size: 0.9rem; }
-        
-        /* Efficiency Card */
-        .eff-stat { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px dashed var(--line); }
-        .eff-stat:last-child { border-bottom: none; }
-        .eff-stat span { color: var(--muted); }
-        .eff-stat strong { font-size: 1.1rem; color: var(--ink); }
-        .tag-green { background: color-mix(in srgb, var(--leaf) 15%, transparent); color: var(--leaf-dark); padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - EDAFONEX</title>
+<style>
+:root{--leaf:#10b981;--leaf-dark:#059669;--water:#3b82f6;--soil:#b45309;--danger:#ef4444;--warn:#f59e0b;--panel:#fff;--line:#e5e7eb;--muted:#6b7280;--ink:#111827;--bg:#f9fafb;--display:'Inter',system-ui,sans-serif;--body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.5 var(--body)}
+:focus-visible{outline:3px solid var(--water);outline-offset:2px;border-radius:6px}
+
+body>header{background:#fff;padding:15px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100}
+.brand{font:800 1.2rem var(--display);text-decoration:none;display:flex;align-items:center;gap:10px;color:var(--ink)}
+.brand svg{width:24px;height:24px}
+.nav-links{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:center}
+.nav-links a{text-decoration:none;color:var(--muted);font-weight:500;padding:4px 0;border-bottom:2px solid transparent;transition:color .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--leaf-dark);border-color:var(--leaf)}
+@media(max-width:700px){body>header{justify-content:center}}
+
+.page{max-width:1200px;margin:30px auto;padding:0 20px 60px;display:flex;flex-direction:column;gap:24px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+h1{font:800 1.8rem var(--display);margin:0}
+.live{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--leaf);animation:pulse 1.8s infinite}
+.dot.off{background:var(--danger);animation:none}
+@keyframes pulse{50%{opacity:.25}}
+
+.alert{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;border-radius:12px;font-weight:500;background:color-mix(in srgb,var(--leaf) 12%,transparent);border:1px solid color-mix(in srgb,var(--leaf) 35%,transparent);color:var(--leaf-dark)}
+.alert.hot{background:color-mix(in srgb,var(--danger) 13%,transparent);border-color:color-mix(in srgb,var(--danger) 45%,transparent);color:var(--danger)}
+.alert.idle{background:var(--panel);border-color:var(--line);color:var(--muted)}
+.alert a{color:inherit;font-weight:600;font-size:.9rem}
+
+h2{font:700 1.15rem var(--display);margin:0 0 12px}
+.sensors{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.sensor{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:6px;transition:border-color .3s}
+.sensor.out{border-color:var(--danger)}
+.s-head{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--muted);font-size:.9rem}
+.val{font:700 2rem var(--display);font-variant-numeric:tabular-nums;line-height:1.2}
+.val small{font:500 .95rem var(--body);color:var(--muted);margin-left:4px}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;width:0;background:var(--water);border-radius:4px;transition:width .8s,background .4s}
+.range{font-size:.8rem;color:var(--muted)}
+
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.75rem;font-weight:600}
+.badge.ok{background:color-mix(in srgb,var(--leaf) 15%,transparent);color:var(--leaf-dark)}
+.badge.bad{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
+.badge.off{background:var(--line);color:var(--muted)}
+
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.ctl{font:500 1rem var(--body);color:var(--ink);background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:16px 18px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:4px;width:100%;transition:border-color .2s,background .2s}
+.ctl:hover:not(:disabled){border-color:#ccc}
+.ctl[aria-pressed="true"]{border-color:var(--leaf);background:color-mix(in srgb,var(--leaf) 8%,var(--panel))}
+.ctl:disabled{opacity:.5;cursor:not-allowed}
+.ctl b{font-size:1.15rem}
+.ctl span{color:var(--muted);font-size:.85rem}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-size:.95rem;z-index:200;max-width:90vw}
+.toast.bad{background:var(--danger)}
+@media(prefers-reduced-motion:reduce){.dot,.bar i,*{animation:none!important;transition:none!important}}
+</style>
 </head>
-<body>
+<body data-page="dashboard">
 
-<header>
-    <a class="brand" href="dashboard.html">
-        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 29V15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M16 17C16 10 11 6 4 6c0 7 4 11 12 11Z" fill="var(--leaf)"/><path d="M16 14c0-6 4-9 11-9 0 6-4 9-11 9Z" fill="var(--water)"/></svg>
-        EDAFONEX
-    </a>
-    <div class="nav-links">
-        <a href="dashboard.html" class="active">Dashboard</a>
-        <a href="alerts.html">Alertas</a>
-        <a href="history.html">Historial</a>
-        <a href="settings.html">Configuración</a>
+<main class="page">
+  <div class="top">
+    <h1>Dashboard</h1>
+    <span class="live" id="live" role="status"><span class="dot off"></span>Conectando...</span>
+  </div>
+
+  <div class="alert idle" id="status" role="status" aria-live="polite">
+    <span id="status-text">Esperando lecturas...</span>
+    <a href="alerts.html">Alertas de hoy: <span id="e-alerts">--</span></a>
+  </div>
+
+  <section aria-label="Sensores en tiempo real">
+    <h2>Sensores en tiempo real</h2>
+    <div class="sensors" id="sensors"></div>
+  </section>
+
+  <section aria-label="Control manual">
+    <h2>Control manual</h2>
+    <div class="controls">
+      <button class="ctl" id="btn-pump" data-type="pump" aria-pressed="false" disabled>
+        <span>Bomba de riego</span><b id="lbl-pump">--</b><span id="meta-pump"></span>
+      </button>
+      <button class="ctl" id="btn-fan" data-type="fan" aria-pressed="false" disabled>
+        <span>Ventilación</span><b id="lbl-fan">--</b><span id="meta-fan"></span>
+      </button>
     </div>
-</header>
-
-<div class="wrap-dash">
-    <!-- Columna Izquierda: Monitoreo en Vivo -->
-    <div>
-        <div class="panel" aria-label="Lecturas de Sensores">
-            <div class="panel-head">
-                <strong>Sensores en Tiempo Real</strong>
-                <span class="live"><span class="dot"></span>Conectado</span>
-            </div>
-            
-            <div class="reading">
-                <span class="name">Temperatura Ambiente</span>
-                <span class="val" id="vt">-- °C</span>
-                <div class="bar"><i id="bt"></i></div>
-            </div>
-            <div class="reading">
-                <span class="name">Humedad del Sustrato</span>
-                <span class="val" id="vh">-- %</span>
-                <div class="bar"><i id="bh"></i></div>
-            </div>
-            <div class="reading">
-                <span class="name">Nivel de Tanque de Agua</span>
-                <span class="val" id="vw">-- %</span>
-                <div class="bar"><i id="bw"></i></div>
-            </div>
-
-            <div class="alert" id="status-alert">
-                <span>🛡️</span> <span id="status-text">Cultivo Protegido. Todo en rango.</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Columna Derecha: Controles y Eficiencia -->
-    <div>
-        <div class="panel">
-            <div class="panel-head">
-                <strong>Teleprocesos y Control</strong>
-            </div>
-            <div class="controls">
-                <button class="ctl" id="btn-pump" aria-pressed="false" onclick="toggleActuator('pump_01', 'btn-pump')">
-                    <span>Bomba de Riego</span>
-                    <b id="lbl-pump">Apagada</b>
-                </button>
-                <button class="ctl" id="btn-fan" aria-pressed="false" onclick="toggleActuator('fan_01', 'btn-fan')">
-                    <span>Ventilación</span>
-                    <b id="lbl-fan">Apagado</b>
-                </button>
-            </div>
-            <div style="margin-top: 15px;">
-                <button class="ctl" style="width: 100%; text-align: center; flex-direction: row; justify-content: center;" aria-pressed="true" onclick="alert('El control inteligente está activo. Los actuadores reaccionarán a las reglas climáticas automáticamente.')">
-                    <span>Modo de Control:</span> <b>🤖 Inteligente (Auto)</b>
-                </button>
-            </div>
-        </div>
-
-        <div class="panel">
-            <div class="panel-head">
-                <strong>Eficiencia y Ahorros</strong>
-            </div>
-            <div class="eff-stat">
-                <span>Estado de Riego</span>
-                <strong class="tag-green">Óptimo - Sin desperdicio</strong>
-            </div>
-            <div class="eff-stat">
-                <span>Última activación de bomba</span>
-                <strong id="last-pump">Ayer, 18:30 hrs</strong>
-            </div>
-            <div class="eff-stat">
-                <span>Alertas enviadas hoy (WhatsApp)</span>
-                <strong>0</strong>
-            </div>
-            <p style="font-size: 0.9rem; color: var(--muted); margin-top: 20px; line-height: 1.5;">
-                EDAFONEX está monitoreando el sustrato de forma constante. La bomba solo se encenderá cuando la planta realmente requiera agua, ahorrando electricidad y evitando el exceso de humedad.
-            </p>
-        </div>
-    </div>
-</div>
+  </section>
+</main>
 
 <script>
-    // Conexión real al backend
-    async function fetchTelemetry() {
-        try {
-            const res = await fetch('/api/telemetry/latest');
-            const data = await res.json();
-            if (data) {
-                const t = data.temperature;
-                const h = data.soilMoisture;
-                const w = data.waterLevel;
-                
-                document.getElementById('vt').innerText = t.toFixed(1) + ' °C';
-                document.getElementById('vh').innerText = h.toFixed(1) + ' %';
-                document.getElementById('vw').innerText = w.toFixed(1) + ' %';
-                
-                // Actualizar barras
-                const bt = document.getElementById('bt');
-                bt.style.width = Math.min(Math.max((t - 10) / 35 * 100, 0), 100) + '%';
-                bt.style.background = t > 30 ? 'var(--danger)' : 'var(--leaf)';
-                
-                const bh = document.getElementById('bh');
-                bh.style.width = h + '%';
-                bh.style.background = h < 40 ? 'var(--warn)' : 'var(--water)';
-                
-                const bw = document.getElementById('bw');
-                bw.style.width = w + '%';
-                bw.style.background = w < 25 ? 'var(--danger)' : 'var(--water)';
-                
-                // Actualizar Estado General
-                const alertBox = document.getElementById('status-alert');
-                const alertTxt = document.getElementById('status-text');
-                
-                if (t > 30 || h < 40 || w < 25) {
-                    alertBox.className = 'alert hot';
-                    let issues = [];
-                    if(t>30) issues.push('Temp Alta');
-                    if(h<40) issues.push('Sustrato Seco');
-                    if(w<25) issues.push('Nivel Tanque Crítico');
-                    alertTxt.innerHTML = '⚠️ <strong>Peligro detectado:</strong> ' + issues.join(', ') + '. Notificando al WhatsApp...';
-                } else {
-                    alertBox.className = 'alert';
-                    alertTxt.innerHTML = '🛡️ <strong>Cultivo Protegido.</strong> Condiciones óptimas.';
-                }
-            }
-        } catch(e) {}
-    }
+(function () {
+  var LINKS = [['dashboard', 'Dashboard'], ['zone', 'Zonas'], ['alerts', 'Alertas'], ['history', 'Historial'],
+    ['actuators', 'Actuadores'], ['automation', 'Automatización'], ['settings', 'Configuración']];
+  var page = document.body.getAttribute('data-page');
 
-    async function fetchActuators() {
-        try {
-            const res = await fetch('/api/actuators');
-            const data = await res.json();
-            
-            const pump = data.find(a => a.type === 'pump');
-            const fan = data.find(a => a.type === 'fan');
-            
-            if(pump) {
-                const btn = document.getElementById('btn-pump');
-                const lbl = document.getElementById('lbl-pump');
-                const isOn = pump.state === 'on';
-                btn.setAttribute('aria-pressed', isOn);
-                lbl.innerText = isOn ? 'Encendida' : 'Apagada';
-            }
-            if(fan) {
-                const btn = document.getElementById('btn-fan');
-                const lbl = document.getElementById('lbl-fan');
-                const isOn = fan.state === 'on';
-                btn.setAttribute('aria-pressed', isOn);
-                lbl.innerText = isOn ? 'Encendido' : 'Apagado';
-            }
-        } catch(e) {}
+  window.EDX = {
+    esc: function (s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    },
+    api: async function (path, opts) {
+      var o = Object.assign({ headers: { 'Content-Type': 'application/json' } }, opts || {});
+      if (o.body && typeof o.body !== 'string') o.body = JSON.stringify(o.body);
+      var res;
+      try { res = await fetch(path, o); } catch (e) { throw new Error('No hay conexión con el servidor.'); }
+      var data = null;
+      try { data = await res.json(); } catch (e) {}
+      if (!res.ok) throw new Error((data && data.error) || 'Error del servidor (' + res.status + ').');
+      return data;
+    },
+    toast: function (msg, bad) {
+      var t = document.createElement('div');
+      t.className = 'toast' + (bad ? ' bad' : '');
+      t.setAttribute('role', 'status');
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(function () { t.remove(); }, 3500);
+    },
+    date: function (d) {
+      var x = new Date(d);
+      return isNaN(x) ? '--' : x.toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' });
     }
+  };
 
-    async function toggleActuator(id, btnId) {
-        const btn = document.getElementById(btnId);
-        const currentState = btn.getAttribute('aria-pressed') === 'true';
-        const newState = currentState ? 'off' : 'on';
-        
-        try {
-            const res = await fetch('/api/actuators/' + id + '/command', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ state: newState, source: 'manual' })
-            });
-            const data = await res.json();
-            if(!res.ok) {
-                alert("Error de seguridad: " + data.error);
-            } else {
-                fetchActuators();
-            }
-        } catch(e) {}
-    }
-
-    setInterval(fetchTelemetry, 2000);
-    setInterval(fetchActuators, 2000);
-    fetchTelemetry();
-    fetchActuators();
+  var links = LINKS.map(function (l) {
+    return '<a href="' + l[0] + '.html"' + (l[0] === page ? ' class="active" aria-current="page"' : '') + '>' + l[1] + '</a>';
+  }).join('');
+  document.body.insertAdjacentHTML('afterbegin',
+    '<header><a class="brand" href="dashboard.html">' +
+    '<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 29V15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M16 17C16 10 11 6 4 6c0 7 4 11 12 11Z" fill="var(--leaf)"/><path d="M16 14c0-6 4-9 11-9 0 6-4 9-11 9Z" fill="var(--water)"/></svg>' +
+    'EDAFONEX</a><nav class="nav-links" aria-label="Principal">' + links + '</nav></header>');
+})();
 </script>
 
+<script>
+var $ = function (id) { return document.getElementById(id); };
+
+// Límites por defecto; tempMax, moistureMin y waterMin se sobrescriben desde /api/settings
+var LIMITS = { tempMax: 30, moistureMin: 40, waterMin: 25 };
+
+// Una sola definición por sensor: de aquí salen las tarjetas, los rangos y las alertas
+var SENSORS = [
+  { k: 'temperature',  n: 'Temperatura ambiente', u: '°C',  d: 1, min: 10, max: 45,   hi: 'tempMax', color: 'var(--leaf)' },
+  { k: 'soilMoisture', n: 'Humedad del sustrato', u: '%',   d: 1, min: 0,  max: 100,  lo: 'moistureMin' },
+  { k: 'waterLevel',   n: 'Nivel del tanque',     u: '%',   d: 1, min: 0,  max: 100,  lo: 'waterMin' },
+  { k: 'humidity',     n: 'Humedad ambiente',     u: '%',   d: 1, min: 0,  max: 100,  lo: 30, hi: 80 },
+  { k: 'co2',          n: 'CO₂',                  u: 'ppm', d: 0, min: 0,  max: 1000, lo: 300, hi: 800 },
+  { k: 'ph',           n: 'pH del agua',          u: '',    d: 1, min: 0,  max: 14,   lo: 5.5, hi: 7.5 },
+  { k: 'light',        n: 'Luz ambiental',        u: 'lux', d: 0, min: 0,  max: 2000, color: 'var(--warn)' }
+];
+var NAMES = { pump: ['Encendida', 'Apagada'], fan: ['Encendida', 'Apagada'] };
+
+function lim(x) { return typeof x === 'string' ? LIMITS[x] : x; }
+
+$('sensors').innerHTML = SENSORS.map(function (s) {
+  return '<article class="sensor" id="c-' + s.k + '">' +
+    '<div class="s-head"><span>' + s.n + '</span><span class="badge off" id="s-' + s.k + '">--</span></div>' +
+    '<div class="val"><span id="v-' + s.k + '">--</span><small>' + s.u + '</small></div>' +
+    '<div class="bar"><i id="b-' + s.k + '"></i></div>' +
+    '<div class="range" id="r-' + s.k + '"></div></article>';
+}).join('');
+
+function refreshRanges() {
+  SENSORS.forEach(function (s) {
+    var parts = [];
+    if (s.lo != null) parts.push('mín. ' + lim(s.lo) + (s.u ? ' ' + s.u : ''));
+    if (s.hi != null) parts.push('máx. ' + lim(s.hi) + (s.u ? ' ' + s.u : ''));
+    $('r-' + s.k).textContent = parts.length ? 'Rango: ' + parts.join(' · ') : 'Sin límite definido';
+  });
+}
+refreshRanges();
+
+// Sondeo sin solapamientos y en pausa cuando la pestaña no está visible
+function poll(fn, ms) {
+  (async function run() {
+    if (!document.hidden) { try { await fn(); } catch (e) {} }
+    setTimeout(run, ms);
+  })();
+}
+function setLive(ok, when) {
+  $('live').innerHTML = '<span class="dot' + (ok ? '' : ' off') + '"></span>' +
+    (ok ? 'Conectado' + (when ? ' · ' + EDX.date(when) : '') : 'Sin conexión');
+}
+function setStatus(cls, html) { $('status').className = 'alert ' + cls; $('status-text').innerHTML = html; }
+
+async function loadLimits() {
+  try {
+    var s = await EDX.api('/api/settings');
+    ['tempMax', 'moistureMin', 'waterMin'].forEach(function (k) {
+      if (s && typeof s[k] === 'number') LIMITS[k] = s[k];
+    });
+    refreshRanges();
+  } catch (e) { /* se usan los valores por defecto */ }
+}
+
+// Pinta una tarjeta y devuelve 1 si el valor está fuera de rango
+function paint(s, raw) {
+  var v = raw == null ? NaN : Number(raw);
+  var card = $('c-' + s.k), badge = $('s-' + s.k), bar = $('b-' + s.k);
+  if (isNaN(v)) {
+    $('v-' + s.k).textContent = '--';
+    bar.style.width = '0%';
+    badge.className = 'badge off'; badge.textContent = 'Sin dato';
+    card.classList.remove('out');
+    return 0;
+  }
+  var low = s.lo != null && v < lim(s.lo), high = s.hi != null && v > lim(s.hi), out = low || high;
+  $('v-' + s.k).textContent = v.toFixed(s.d);
+  bar.style.width = Math.min(Math.max((v - s.min) / (s.max - s.min) * 100, 0), 100) + '%';
+  bar.style.background = out ? 'var(--danger)' : (s.color || 'var(--water)');
+  card.classList.toggle('out', out);
+  if (s.lo == null && s.hi == null) { badge.className = 'badge off'; badge.textContent = 'Informativo'; }
+  else if (out) { badge.className = 'badge bad'; badge.textContent = low ? 'Bajo' : 'Alto'; }
+  else { badge.className = 'badge ok'; badge.textContent = 'En rango'; }
+  return out ? 1 : 0;
+}
+
+async function telemetry() {
+  var d;
+  try { d = await EDX.api('/api/telemetry/latest'); setLive(true, d && (d.createdAt || d.timestamp)); }
+  catch (e) { setLive(false); return setStatus('hot', 'No se pudo obtener las lecturas. ' + EDX.esc(e.message)); }
+  if (!d) return setStatus('idle', 'Aún no hay lecturas de los sensores.');
+
+  var bad = SENSORS.reduce(function (n, s) { return n + paint(s, d[s.k]); }, 0);
+  if (bad) setStatus('hot', '<strong>Atención:</strong> ' + bad + (bad === 1 ? ' lectura fuera de rango.' : ' lecturas fuera de rango.'));
+  else setStatus('', '<strong>Cultivo protegido.</strong> Todas las lecturas están en rango.');
+}
+
+async function actuators() {
+  var list;
+  try { list = await EDX.api('/api/actuators'); } catch (e) { return; }
+  list = list || [];
+  ['pump', 'fan'].forEach(function (type) {
+    var a = list.find(function (x) { return x.type === type; });
+    var btn = $('btn-' + type), lbl = $('lbl-' + type), meta = $('meta-' + type);
+    if (!a) { btn.disabled = true; btn.dataset.id = ''; lbl.textContent = 'No disponible'; meta.textContent = ''; return; }
+    var on = a.state === 'on';
+    btn.dataset.id = a.id;
+    btn.dataset.state = on ? 'on' : 'off';
+    if (!btn.classList.contains('busy')) btn.disabled = false;
+    btn.setAttribute('aria-pressed', on);
+    lbl.textContent = NAMES[type][on ? 0 : 1];
+    meta.textContent = 'Modo ' + (a.mode || '--') + (a.updatedAt ? ' · cambió ' + EDX.date(a.updatedAt) : '');
+  });
+}
+
+async function alertsToday() {
+  var list = await EDX.api('/api/alerts');
+  var today = new Date().toDateString();
+  $('e-alerts').textContent = (list || []).filter(function (a) { return new Date(a.createdAt).toDateString() === today; }).length;
+}
+
+async function toggle(btn) {
+  if (!btn.dataset.id) return;
+  var next = btn.dataset.state === 'on' ? 'off' : 'on';
+  btn.disabled = true; btn.classList.add('busy');
+  try {
+    await EDX.api('/api/actuators/' + encodeURIComponent(btn.dataset.id) + '/command', {
+      method: 'POST', body: { state: next, source: 'manual' }
+    });
+  } catch (e) { EDX.toast(e.message, true); }
+  btn.classList.remove('busy');
+  await actuators();
+}
+document.querySelectorAll('.ctl[data-type]').forEach(function (b) { b.addEventListener('click', function () { toggle(b); }); });
+
+loadLimits().then(function () { poll(telemetry, 2000); });
+poll(actuators, 2000);
+poll(alertsToday, 30000);
+</script>
 </body>
 </html>
