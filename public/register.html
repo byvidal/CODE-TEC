@@ -1,27 +1,230 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Registro - Greenhouse Monitor</title>
-    <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crear cuenta · EDAFONEX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f2f6ef; --ink:#17261b; --muted:#54655a; --line:#d5dfd0;
+  --leaf:#1f6b3a; --leaf-dark:#134727; --water:#2a7fb5; --danger:#b3392b; --panel:#ffffff;
+  --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#101a13; --ink:#e6efe4; --muted:#9db0a2; --line:#233428;
+    --leaf:#4bb46f; --leaf-dark:#7fd39a; --panel:#172319; --water:#5aaee0; --danger:#e26a5b;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.55 var(--body)}
+a{color:var(--leaf-dark)}
+:focus-visible{outline:3px solid var(--water);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+
+header{padding:22px 0}
+header .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.brand{font:800 1.35rem var(--display);letter-spacing:.02em;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:10px}
+.brand svg{width:28px;height:28px}
+.have{font-size:.95rem;color:var(--muted)}
+
+h1{font:800 clamp(1.9rem,4vw,2.8rem)/1.05 var(--display);letter-spacing:-.02em;margin:24px 0 8px}
+.sub{color:var(--muted);margin:0 0 36px;max-width:56ch}
+
+.layout{display:grid;grid-template-columns:1fr 340px;gap:40px;align-items:start;padding-bottom:72px}
+fieldset{border:0;padding:0;margin:0 0 40px;min-width:0}
+legend{font:700 1.3rem var(--display);padding:0;margin-bottom:18px}
+
+/* Planes */
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.plan{position:relative;display:block;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:20px;cursor:pointer;transition:border-color .2s,box-shadow .2s}
+.plan:hover{border-color:var(--leaf)}
+.plan:has(input:checked){border-color:var(--leaf);box-shadow:0 0 0 3px color-mix(in srgb,var(--leaf) 25%,transparent)}
+.plan:has(input:focus-visible){outline:3px solid var(--water);outline-offset:3px}
+.plan input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.plan h3{font:700 1.2rem var(--display);margin:0 0 4px}
+.price{font:800 1.9rem var(--display);color:var(--leaf);margin-bottom:14px}
+.price small{font:400 .9rem var(--body);color:var(--muted)}
+.plan ul{list-style:none;margin:0;padding:0;font-size:.93rem}
+.plan li{padding:5px 0 5px 22px;position:relative}
+.plan li::before{content:"✓";position:absolute;left:0;color:var(--leaf);font-weight:700}
+.plan li.new{font-weight:500;color:var(--water)}
+.check{position:absolute;top:14px;right:14px;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.8rem;color:transparent}
+.plan:has(input:checked) .check{background:var(--leaf);border-color:var(--leaf);color:#fff}
+
+/* Campos */
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:18px 20px}
+.field label{display:block;font-weight:500;margin-bottom:6px}
+.field .opt{font-weight:400;color:var(--muted)}
+.field input{width:100%;padding:12px 14px;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.field input:focus{border-color:var(--leaf);outline:3px solid color-mix(in srgb,var(--leaf) 25%,transparent);outline-offset:0}
+.field input:user-invalid{border-color:var(--danger)}
+.hint{font-size:.85rem;color:var(--muted);margin:6px 0 0}
+.pw{position:relative}
+.pw input{padding-right:84px}
+.pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);font:500 .85rem var(--body);background:none;border:0;color:var(--leaf-dark);padding:8px 10px;cursor:pointer}
+
+/* Resumen */
+.summary{position:sticky;top:24px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px}
+.summary h2{font:700 1.2rem var(--display);margin:0 0 16px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.row span:first-child{color:var(--muted)}
+.total{font:800 1.6rem var(--display);color:var(--leaf)}
+.summary ul{margin:12px 0 0;padding-left:18px;color:var(--muted);font-size:.9rem}
+.btn{width:100%;margin-top:20px;font:700 1.05rem var(--display);padding:15px;border:0;border-radius:10px;background:var(--leaf);color:#fff;cursor:pointer;transition:background .2s}
+.btn:hover{background:var(--leaf-dark)}
+.fine{font-size:.82rem;color:var(--muted);margin:12px 0 0;text-align:center}
+
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .summary{position:static}
+}
+@media (max-width:600px){
+  .fields{grid-template-columns:1fr}
+  header .wrap{flex-wrap:wrap}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
 </head>
 <body>
-    <div class="container" style="max-width: 500px; margin-top: 50px;">
-        <div class="card">
-            <h2>Crear cuenta demo</h2>
-            <p>Comienza a monitorear tu invernadero simulado.</p>
-            <form action="setup.html" method="GET">
-                <div style="margin-bottom: 15px;">
-                    <label>Nombre del productor</label><br>
-                    <input type="text" value="Productor Demo" style="width: 100%; padding: 8px;" required>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label>Email</label><br>
-                    <input type="email" value="demo@hackaton.com" style="width: 100%; padding: 8px;" required>
-                </div>
-                <button type="submit" class="btn" style="width: 100%;">Continuar</button>
-            </form>
+<header>
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 29V15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M16 17C16 10 11 6 4 6c0 7 4 11 12 11Z" fill="var(--leaf)"/><path d="M16 14c0-6 4-9 11-9 0 6-4 9-11 9Z" fill="var(--water)"/></svg>
+      EDAFONEX
+    </a>
+    <span class="have">¿Ya tienes cuenta? <a href="index.html#login">Iniciar sesión</a></span>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Crea tu cuenta</h1>
+  <p class="sub">Elige el plan con los sensores que necesita tu cultivo y completa tus datos. Puedes revisar el resumen antes de continuar.</p>
+
+  <form id="reg" class="layout" novalidate>
+    <div>
+      <fieldset>
+        <legend>1. Elige tu plan</legend>
+        <div class="plans">
+          <label class="plan">
+            <input type="radio" name="plan" value="basic" checked>
+            <span class="check" aria-hidden="true">✓</span>
+            <h3>Básico</h3>
+            <div class="price">$299<small>/mes</small></div>
+            <ul>
+              <li>Temperatura y humedad (DHT11)</li>
+              <li>Luz ambiental (LDR)</li>
+              <li>Humedad del suelo (capacitivo)</li>
+              <li>Notificaciones por correo</li>
+              <li>Panel en tiempo real</li>
+            </ul>
+          </label>
+          <label class="plan">
+            <input type="radio" name="plan" value="advanced">
+            <span class="check" aria-hidden="true">✓</span>
+            <h3>Avanzado</h3>
+            <div class="price">$599<small>/mes</small></div>
+            <ul>
+              <li class="new">Notificaciones por WhatsApp</li>
+              <li>Temperatura y humedad de precisión (DHT22)</li>
+              <li>Temperatura sumergible (DS18B20)</li>
+              <li>Luz ambiental (LDR)</li>
+              <li>Humedad del suelo (capacitivo)</li>
+            </ul>
+          </label>
+          <label class="plan">
+            <input type="radio" name="plan" value="pro">
+            <span class="check" aria-hidden="true">✓</span>
+            <h3>Profesional</h3>
+            <div class="price">$1,299<small>/mes</small></div>
+            <ul>
+              <li class="new">CO₂ (MH-Z19)</li>
+              <li class="new">pH del agua</li>
+              <li class="new">Temperatura y humedad de alta precisión (SHT31)</li>
+              <li class="new">Luz avanzada (BH1750)</li>
+              <li>Temperatura sumergible (DS18B20)</li>
+              <li>WhatsApp con prioridad</li>
+            </ul>
+          </label>
         </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>2. Tus datos</legend>
+        <div class="fields">
+          <div class="field">
+            <label for="nombre">Nombre del productor</label>
+            <input id="nombre" name="nombre" type="text" autocomplete="name" required placeholder="María Ríos">
+          </div>
+          <div class="field">
+            <label for="correo">Correo electrónico</label>
+            <input id="correo" name="correo" type="email" autocomplete="email" required placeholder="contacto@empresa.com">
+          </div>
+          <div class="field">
+            <label for="wa">Número de WhatsApp <span class="opt" id="waopt">(opcional en este plan)</span></label>
+            <input id="wa" name="wa" type="tel" autocomplete="tel" placeholder="+52 55 1234 5678" pattern="[+0-9\s\-]{10,20}" aria-describedby="wahint">
+            <p class="hint" id="wahint">Aquí te enviaremos las alertas de tu invernadero.</p>
+          </div>
+          <div class="field">
+            <label for="pass">Contraseña</label>
+            <div class="pw">
+              <input id="pass" name="pass" type="password" autocomplete="new-password" required minlength="8" aria-describedby="passhint">
+              <button type="button" id="toggle" aria-controls="pass">Mostrar</button>
+            </div>
+            <p class="hint" id="passhint">Mínimo 8 caracteres.</p>
+          </div>
+        </div>
+      </fieldset>
     </div>
+
+    <aside class="summary" aria-label="Resumen de tu pedido">
+      <h2>Resumen</h2>
+      <div class="row"><span>Plan</span><strong id="sName">Básico</strong></div>
+      <div class="row"><span>Alertas</span><strong id="sAlert">Correo</strong></div>
+      <div class="row"><span>Total mensual</span><span class="total" id="sTotal">$299</span></div>
+      <button class="btn" type="submit">Crear cuenta y continuar</button>
+      <p class="fine">Podrás cambiar de plan más adelante.</p>
+    </aside>
+  </form>
+</main>
+
+<script>
+(function(){
+  var plans={
+    basic:{name:'Básico',price:'$299',alert:'Correo',wa:false},
+    advanced:{name:'Avanzado',price:'$599',alert:'Correo y WhatsApp',wa:true},
+    pro:{name:'Profesional',price:'$1,299',alert:'Correo y WhatsApp prioritario',wa:true}
+  };
+  var form=document.getElementById('reg'), wa=document.getElementById('wa');
+  function current(){return form.querySelector('input[name="plan"]:checked').value}
+  function update(){
+    var p=plans[current()];
+    document.getElementById('sName').textContent=p.name;
+    document.getElementById('sAlert').textContent=p.alert;
+    document.getElementById('sTotal').textContent=p.price;
+    wa.required=p.wa;
+    document.getElementById('waopt').hidden=p.wa;
+  }
+  form.addEventListener('change',function(e){if(e.target.name==='plan')update()});
+  document.getElementById('toggle').onclick=function(){
+    var pw=document.getElementById('pass'),show=pw.type==='password';
+    pw.type=show?'text':'password';
+    this.textContent=show?'Ocultar':'Mostrar';
+  };
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    if(!form.checkValidity()){form.reportValidity();return}
+    /* La contraseña no viaja en la URL. Sustituye este paso por tu llamada al backend. */
+    var q=new URLSearchParams({plan:current(),nombre:form.nombre.value});
+    window.location.href='setup.html?'+q.toString();
+  });
+  update();
+})();
+</script>
 </body>
 </html>

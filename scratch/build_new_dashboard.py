@@ -1,3 +1,9 @@
+import io
+import os
+
+base_dir = r"c:\Users\ibrya\Documents\TECNM\HakaReg\CODE-TEC\public"
+
+dashboard_html = """
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -251,3 +257,9 @@
 
 </body>
 </html>
+"""
+
+with io.open(os.path.join(base_dir, 'dashboard.html'), 'w', encoding='utf-8') as f:
+    f.write(dashboard_html.strip())
+
+print("Dashboard rewritten.")

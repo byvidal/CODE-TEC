@@ -1,136 +1,304 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Greenhouse Monitor - IoT Agrícola</title>
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        /* Hero Section */
-        .hero { 
-            text-align: center; 
-            padding: 120px 20px; 
-            background: linear-gradient(135deg, #1e8449, #27ae60); 
-            color: white; 
-            border-bottom-left-radius: 50% 10%;
-            border-bottom-right-radius: 50% 10%;
-            box-shadow: 0 10px 30px rgba(39, 174, 96, 0.3);
-            margin-bottom: 40px;
-        }
-        .hero h1 { 
-            font-size: 3.5em; 
-            margin: 0 0 15px 0; 
-            letter-spacing: -1px;
-        }
-        .hero p { 
-            font-size: 1.3em; 
-            margin: 0 auto 35px auto; 
-            max-width: 700px;
-            line-height: 1.5;
-            opacity: 0.95;
-        }
-        
-        /* Navbar específica de Landing */
-        .landing-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 5%;
-            background: transparent;
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            color: white;
-        }
-        .landing-nav .brand {
-            font-size: 1.5em;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EDAFONEX · Invernaderos inteligentes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f2f6ef; --ink:#17261b; --muted:#54655a; --line:#d5dfd0;
+  --leaf:#1f6b3a; --leaf-dark:#134727; --soil:#3a2a20;
+  --water:#2a7fb5; --warn:#c98a10; --danger:#b3392b; --panel:#ffffff;
+  --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#101a13; --ink:#e6efe4; --muted:#9db0a2; --line:#233428;
+    --leaf:#4bb46f; --leaf-dark:#7fd39a; --panel:#172319; --soil:#e6efe4;
+    --water:#5aaee0; --warn:#e2ae3d; --danger:#e26a5b;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.05rem/1.6 var(--body)}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--water);outline-offset:3px;border-radius:4px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
 
-        /* Features */
-        .feature-icon {
-            font-size: 3em;
-            margin-bottom: 15px;
-            display: inline-block;
-        }
-        .card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            text-align: center;
-            padding: 30px 20px;
-        }
-        .card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-        .card h3 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-        }
-        .card p {
-            color: #7f8c8d;
-            line-height: 1.6;
-            margin: 0;
-        }
+/* Nav */
+header{padding:22px 0}
+header .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.brand{font:800 1.35rem var(--display);letter-spacing:.02em;text-decoration:none;display:flex;align-items:center;gap:10px}
+.brand svg{width:28px;height:28px}
+.nav-link{font-weight:500;text-decoration:none;color:var(--leaf-dark);padding:8px 2px;border-bottom:2px solid var(--line)}
+.nav-link:hover{border-color:var(--leaf)}
+.nav-actions{display:flex;align-items:center;gap:22px}
+.nav-login{font:700 .95rem var(--display);text-decoration:none;color:var(--leaf-dark);border:2px solid var(--leaf);border-radius:10px;padding:8px 18px;transition:background .2s,color .2s}
+.nav-login:hover{background:var(--leaf);color:#fff}
+@media (max-width:480px){.nav-actions{gap:14px}.nav-login{padding:7px 12px}}
 
-        /* Footer */
-        footer {
-            text-align: center;
-            padding: 40px 20px;
-            margin-top: 60px;
-            color: #95a5a6;
-            border-top: 1px solid #eee;
-        }
+/* Hero */
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;padding:56px 0 88px}
+h1{font:800 clamp(2.4rem,5.4vw,4.2rem)/1.02 var(--display);letter-spacing:-.025em;margin:0 0 22px;max-width:14ch}
+.lead{color:var(--muted);font-size:1.15rem;max-width:52ch;margin:0 0 32px}
+.actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.btn{display:inline-block;font:700 1.05rem var(--display);text-decoration:none;padding:15px 28px;border-radius:10px;background:var(--leaf);color:#fff;transition:background .2s}
+.btn:hover{background:var(--leaf-dark)}
+.btn-ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.btn-ghost:hover{background:transparent;border-color:var(--leaf)}
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .hero { padding: 100px 15px 60px 15px; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-            .hero h1 { font-size: 2.5em; }
-            .hero p { font-size: 1.1em; }
-            .landing-nav { position: relative; background: #1e8449; padding: 15px 20px; }
-        }
-        @media (max-width: 480px) {
-            .hero h1 { font-size: 2em; }
-            .btn { width: 100%; box-sizing: border-box; text-align: center; }
-        }
-    </style>
+/* Panel en vivo */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 18px 40px -22px rgba(19,71,39,.45)}
+.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.panel-head strong{font:700 1.05rem var(--display)}
+.live{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--leaf);animation:pulse 1.8s infinite}
+@keyframes pulse{50%{opacity:.25}}
+.reading{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:4px 12px;padding:14px 0;border-top:1px solid var(--line)}
+.reading:first-of-type{border-top:0}
+.reading .name{color:var(--muted);font-size:.95rem}
+.reading .val{font:700 1.7rem var(--display);font-variant-numeric:tabular-nums}
+.bar{grid-column:1/-1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;width:50%;background:var(--leaf);border-radius:3px;transition:width .8s,background .4s}
+.alert{margin:14px 0;padding:12px 14px;border-radius:10px;font-size:.95rem;background:color-mix(in srgb,var(--leaf) 12%,transparent);border:1px solid color-mix(in srgb,var(--leaf) 35%,transparent)}
+.alert.hot{background:color-mix(in srgb,var(--danger) 13%,transparent);border-color:color-mix(in srgb,var(--danger) 45%,transparent)}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ctl{font:500 .95rem var(--body);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:10px;padding:11px 12px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;gap:8px}
+.ctl[aria-pressed="true"]{border-color:var(--leaf);background:color-mix(in srgb,var(--leaf) 12%,transparent)}
+.ctl b{font-weight:700}
+.note{margin:12px 0 0;font-size:.82rem;color:var(--muted)}
+
+/* Capacidades */
+section{padding:72px 0;border-top:1px solid var(--line)}
+h2{font:800 clamp(1.7rem,3.4vw,2.5rem)/1.1 var(--display);letter-spacing:-.02em;margin:0 0 40px;max-width:22ch}
+.caps{display:grid;gap:0}
+.cap{display:grid;grid-template-columns:minmax(200px,.8fr) 2fr;gap:12px 40px;padding:26px 0;border-bottom:1px solid var(--line)}
+.cap:first-child{padding-top:0}
+.cap h3{font:700 1.35rem var(--display);margin:0}
+.cap p{margin:0;color:var(--muted);max-width:60ch}
+
+/* Flujo */
+.flow{display:grid;grid-template-columns:repeat(3,1fr);gap:0;counter-reset:s}
+.step{padding:0 28px 0 0;position:relative}
+.step::before{counter-increment:s;content:counter(s);font:800 1rem var(--display);width:36px;height:36px;border-radius:50%;background:var(--soil);color:var(--bg);display:grid;place-items:center;margin-bottom:16px}
+.step h3{font:700 1.2rem var(--display);margin:0 0 6px}
+.step p{margin:0;color:var(--muted)}
+
+/* CTA + footer */
+.cta{text-align:left}
+.cta h2{margin-bottom:24px}
+footer{padding:32px 0 48px;color:var(--muted);font-size:.9rem;border-top:1px solid var(--line)}
+
+/* Login Modal */
+.modal { border: none; border-radius: 12px; padding: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 400px; width: 90%; background: var(--bg); color: var(--ink); }
+.modal::backdrop { background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); }
+.modal-content { padding: 30px; position: relative; }
+.modal .close { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: var(--muted); }
+.modal h2 { margin-top: 0; font-size: 1.8rem; margin-bottom: 20px; }
+.input-group { margin-bottom: 15px; text-align: left; }
+.input-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.95rem; }
+.input-group input { width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 6px; box-sizing: border-box; font-family: inherit; background: transparent; color: var(--ink); }
+.input-group input:focus { outline: none; border-color: var(--leaf); }
+
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr;gap:40px;padding:32px 0 56px}
+  .cap{grid-template-columns:1fr}
+  .flow{grid-template-columns:1fr;gap:28px}
+  .step{padding:0}
+  .btn{width:100%;text-align:center}
+}
+@media (prefers-reduced-motion:reduce){
+  .dot{animation:none}
+  .bar i{transition:none}
+  html{scroll-behavior:auto}
+}
+</style>
 </head>
 <body>
-    <nav class="landing-nav">
-        <div class="brand">🌱 Greenhouse Monitor</div>
+<header>
+  <div class="wrap">
+    <a class="brand" href="#">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 29V15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M16 17C16 10 11 6 4 6c0 7 4 11 12 11Z" fill="var(--leaf)"/><path d="M16 14c0-6 4-9 11-9 0 6-4 9-11 9Z" fill="var(--water)"/></svg>
+      EDAFONEX
+    </a>
+    <nav class="nav-actions" aria-label="Cuenta">
+      <a class="nav-link" href="register.html">Crear cuenta</a>
+      <a class="nav-login" href="#" id="open-login">Iniciar sesión</a>
     </nav>
+  </div>
+</header>
 
-    <div class="hero">
-        <h1>Invernaderos Inteligentes</h1>
-        <p>Sistema avanzado de adquisición de datos, telemetría y teleprocesos. Monitorea y automatiza el clima de tu cultivo desde cualquier lugar.</p>
-        <a href="register.html" class="btn btn-secondary" style="font-size: 1.2em; padding: 15px 30px; border-radius: 30px; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);">Comenzar Demostración</a>
+<main>
+  <div class="wrap hero">
+    <div>
+      <h1>Tu invernadero, bajo control desde el celular</h1>
+      <p class="lead">EDAFONEX lee la temperatura, la humedad del sustrato y el nivel de agua en tiempo real. Te avisa cuando algo se sale de rango y enciende el riego o los ventiladores por ti.</p>
+      <div class="actions">
+        <a class="btn" href="register.html">Comenzar ahora</a>
+        <a class="btn btn-ghost" href="#como-funciona">Ver cómo funciona</a>
+      </div>
     </div>
 
-    <div class="container">
-        <div class="grid">
-            <div class="card">
-                <div class="feature-icon">📡</div>
-                <h3>Telemetría en Tiempo Real</h3>
-                <p>Recibe datos de temperatura, humedad de sustrato y niveles de agua directamente desde sensores IoT en milisegundos.</p>
-            </div>
-            <div class="card">
-                <div class="feature-icon">⚠️</div>
-                <h3>Alertas Automáticas</h3>
-                <p>El motor lógico detecta anomalías climáticas al instante y genera notificaciones críticas antes de que tu cultivo sufra estrés.</p>
-            </div>
-            <div class="card">
-                <div class="feature-icon">⚙️</div>
-                <h3>Teleprocesos y Control</h3>
-                <p>Automatiza encendidos de bombas de riego y ventiladores basados en reglas estrictas, o tómalo bajo control manual.</p>
-            </div>
+    <aside class="panel" aria-label="Vista previa del panel de control">
+      <div class="panel-head">
+        <strong>Invernadero 1</strong>
+        <span class="live"><span class="dot"></span>Vista previa</span>
+      </div>
+      <div class="reading"><span class="name">Temperatura</span><span class="val" id="vt">--</span><div class="bar"><i id="bt"></i></div></div>
+      <div class="reading"><span class="name">Humedad del sustrato</span><span class="val" id="vh">--</span><div class="bar"><i id="bh"></i></div></div>
+      <div class="reading"><span class="name">Nivel de agua</span><span class="val" id="vw">--</span><div class="bar"><i id="bw"></i></div></div>
+      <div class="alert" id="alert" role="status" aria-live="polite">Todo en rango.</div>
+      <div class="controls">
+        <button class="ctl" id="pump" aria-pressed="false"><span>Bomba de riego</span><b>Apagada</b></button>
+        <button class="ctl" id="fan" aria-pressed="false"><span>Ventilador</span><b>Apagado</b></button>
+      </div>
+      <div class="controls" style="grid-template-columns:1fr;margin-top:10px">
+        <button class="ctl" id="auto" aria-pressed="true"><span>Modo de control</span><b>Automático</b></button>
+      </div>
+    </aside>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <h2>Lo que hace EDAFONEX por tu cultivo</h2>
+      <div class="caps">
+        <div class="cap">
+          <h3>Datos en tiempo real</h3>
+          <p>Los sensores envían temperatura, humedad de sustrato y nivel de agua, y el panel se actualiza en cuanto llega cada lectura.</p>
         </div>
+        <div class="cap">
+          <h3>Alertas antes del estrés</h3>
+          <p>Cuando una lectura sale del rango que definiste, recibes una notificación crítica antes de que las plantas sufran.</p>
+        </div>
+        <div class="cap">
+          <h3>Riego y ventilación</h3>
+          <p>Las bombas y los ventiladores se encienden solos según tus reglas. Si prefieres decidir tú, cambias a modo manual con un toque.</p>
+        </div>
+      </div>
     </div>
+  </section>
 
-    <footer>
-        <p>Prototipo desarrollado para el Hackatón. &copy; 2026 Greenhouse Monitor</p>
-    </footer>
+  <section id="como-funciona">
+    <div class="wrap">
+      <h2>De la lectura a la acción en tres pasos</h2>
+      <div class="flow">
+        <div class="step"><h3>Los sensores miden</h3><p>Cada sensor IoT envía sus datos al sistema en segundos.</p></div>
+        <div class="step"><h3>Las reglas evalúan</h3><p>El sistema compara cada dato con tus rangos y detecta anomalías.</p></div>
+        <div class="step"><h3>El sistema actúa</h3><p>Genera la alerta y activa el riego o la ventilación que corresponda.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="wrap">
+      <h2>Empieza a monitorear tu invernadero</h2>
+      <a class="btn" href="register.html">Crear cuenta</a>
+    </div>
+  </section>
+</main>
+
+
+
+
+
+
+
+<dialog id="login-modal" class="modal">
+  <div class="modal-content">
+    <span class="close" id="close-login">&times;</span>
+    <h2>Iniciar sesión</h2>
+    <form id="login-form">
+      <div class="input-group">
+        <label for="login-email">Correo electrónico</label>
+        <input type="email" id="login-email" required placeholder="contacto@empresa.com">
+      </div>
+      <div class="input-group">
+        <label for="login-password">Contraseña</label>
+        <input type="password" id="login-password" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn" style="width:100%; margin-top:10px;">Entrar al panel</button>
+      <p id="login-error" style="color:var(--danger); display:none; font-size:0.9em; margin-top:10px;">Credenciales incorrectas.</p>
+    </form>
+  </div>
+</dialog>
+<footer>
+
+  <div class="wrap">© 2026 EDAFONEX. Todos los derechos reservados. &copy; 2026 EDAFONEX</div>
+</footer>
+
+<script>
+(function(){
+  var s={t:26,h:62,w:80,heat:false,pump:false,fan:false,auto:true};
+  var $=function(i){return document.getElementById(i)};
+
+  
+  
+
+  
+  
+
+  
+  var loginModal = $('login-modal');
+  if (window.location.hash === '#login') {
+      loginModal.showModal();
+  }
+
+  if ($('open-login')) {
+    $('open-login').onclick = function(e) { e.preventDefault(); loginModal.showModal(); };
+  }
+  if ($('close-login')) {
+    $('close-login').onclick = function() { loginModal.close(); };
+  }
+  if ($('login-form')) {
+    $('login-form').onsubmit = function(e) {
+      e.preventDefault();
+      var email = $('login-email').value;
+      if (email.includes('@')) {
+        window.location.href = 'dashboard.html';
+      } else {
+        $('login-error').style.display = 'block';
+      }
+    };
+  }
+
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+  function set(btn,on,txt){btn.setAttribute('aria-pressed',on);btn.querySelector('b').textContent=txt}
+  function render(){
+    $('vt').textContent=s.t.toFixed(1)+' °C';
+    $('vh').textContent=Math.round(s.h)+' %';
+    $('vw').textContent=Math.round(s.w)+' %';
+    $('bt').style.width=clamp((s.t-10)/35*100,0,100)+'%';
+    $('bt').style.background=s.t>30?'var(--danger)':'var(--leaf)';
+    $('bh').style.width=s.h+'%';
+    $('bh').style.background=s.h<40?'var(--warn)':'var(--water)';
+    $('bw').style.width=s.w+'%';
+    $('bw').style.background=s.w<25?'var(--danger)':'var(--water)';
+    var a=$('alert'),hot=s.t>30,dry=s.h<40;
+    a.classList.toggle('hot',hot||dry);
+    a.textContent=hot?'Alerta: temperatura alta ('+s.t.toFixed(1)+' °C). '+(s.auto?'Ventilador encendido.':'Enciéndelo manualmente.')
+      :dry?'Alerta: sustrato seco. '+(s.auto?'Riego encendido.':'Enciende el riego manualmente.'):'Todo en rango.';
+    set($('pump'),s.pump,s.pump?'Encendida':'Apagada');
+    set($('fan'),s.fan,s.fan?'Encendido':'Apagado');
+    set($('auto'),s.auto,s.auto?'Automático':'Manual');
+  }
+  function tick(){
+    s.t=clamp(s.t+(s.heat?0.9:(26-s.t)*0.15)+(Math.random()-.5)*.4,18,40);
+    if(s.fan)s.t-=0.6;
+    s.h=clamp(s.h+(s.pump?4:-0.8)+(Math.random()-.5),15,95);
+    s.w=clamp(s.w+(s.pump?-1.2:0.1),5,100);
+    if(s.auto){s.fan=s.t>30;s.pump=s.h<40}
+    render();
+  }
+  $('pump').onclick=function(){s.auto=false;s.pump=!s.pump;render()};
+  $('fan').onclick=function(){s.auto=false;s.fan=!s.fan;render()};
+  $('auto').onclick=function(){s.auto=!s.auto;render()};
+  render();
+  if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches||true)setInterval(tick,1500);
+})();
+</script>
 </body>
 </html>
