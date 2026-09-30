@@ -107,8 +107,8 @@
                         <span class="badge ${isOn ? 'badge-safe' : 'badge-warn'}" style="font-size:1rem; transition: background 0.3s;">${statusLabel}</span>
                     </div>
                     <div style="display:flex; gap: 10px;">
-                        <button class="btn" style="flex:1; background:var(--leaf); transition: opacity 0.2s; ${isOn?'opacity:0.4; cursor:not-allowed':''}" onclick="command('${a.id}', 'on')" ${isOn?'disabled':''}>ENCENDER</button>
-                        <button class="btn" style="flex:1; background:var(--danger); transition: opacity 0.2s; ${!isOn?'opacity:0.4; cursor:not-allowed':''}" onclick="command('${a.id}', 'off')" ${!isOn?'disabled':''}>APAGAR</button>
+                        <button class="btn" style="flex:1; background:var(--leaf); transition: opacity 0.2s; ${isOn?'opacity:0.4; cursor:not-allowed':''}" onclick="sendCommand('${a.id}', 'on')" ${isOn?'disabled':''}>ENCENDER</button>
+                        <button class="btn" style="flex:1; background:var(--danger); transition: opacity 0.2s; ${!isOn?'opacity:0.4; cursor:not-allowed':''}" onclick="sendCommand('${a.id}', 'off')" ${!isOn?'disabled':''}>APAGAR</button>
                     </div>
                     <div style="margin-top: 15px; font-size: 0.85rem; color: var(--muted); text-align: center;">
                         Control: <strong>Manual/Remoto</strong>
@@ -118,7 +118,7 @@
         }).join('');
     }
 
-    async function command(id, state) {
+    async function sendCommand(id, state) {
         // Optimistic UI Update (instant feedback)
         const actuator = actuatorsData.find(a => a.id === id);
         if(actuator) {
