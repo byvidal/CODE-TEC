@@ -20,11 +20,14 @@ router.post('/:id/resolve', async (req, res, next) => {
 router.post('/test-whatsapp', async (req, res, next) => {
     try {
         const whatsappService = require('../services/whatsappService');
+        const telegramService = require('../services/telegramService');
+        const testMessage = "📊 *Sistema EDAFONEX*\nNotificación de prueba del sistema de alertas enviada exitosamente desde el panel de control.";
         // Se ejecuta en segundo plano (fire-and-forget) para que el frontend no espere
         whatsappService.sendAlert(
             process.env.WHATSAPP_PHONE_NUMBER, 
-            "🤖 *EDAFONEX TEST*\nEste es un mensaje de prueba manual desde tu Dashboard. ¡La integración funciona a la perfección! 🚀"
+            testMessage
         ).catch(console.error);
+        telegramService.sendAlert(testMessage).catch(console.error);
         res.json({ success: true });
     } catch(e) { next(e); }
 });
