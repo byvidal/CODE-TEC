@@ -130,7 +130,7 @@ legend{font:700 1.3rem var(--display);padding:0;margin-bottom:18px}
             <h3>Avanzado</h3>
             <div class="price">$599<small>/mes</small></div>
             <ul>
-              <li class="new">Notificaciones por WhatsApp</li>
+              <li class="new">Notificaciones por Telegram</li>
               <li>Temperatura y humedad de precisión (DHT22)</li>
               <li>Temperatura sumergible (DS18B20)</li>
               <li>Luz ambiental (LDR)</li>
@@ -148,7 +148,7 @@ legend{font:700 1.3rem var(--display);padding:0;margin-bottom:18px}
               <li class="new">Temperatura y humedad de alta precisión (SHT31)</li>
               <li class="new">Luz avanzada (BH1750)</li>
               <li>Temperatura sumergible (DS18B20)</li>
-              <li>WhatsApp con prioridad</li>
+              <li>Telegram con prioridad</li>
             </ul>
           </label>
         </div>
@@ -166,8 +166,8 @@ legend{font:700 1.3rem var(--display);padding:0;margin-bottom:18px}
             <input id="correo" name="correo" type="email" autocomplete="email" required placeholder="contacto@empresa.com">
           </div>
           <div class="field">
-            <label for="wa">Número de WhatsApp <span class="opt" id="waopt">(opcional en este plan)</span></label>
-            <input id="wa" name="wa" type="tel" autocomplete="tel" placeholder="+52 55 1234 5678" pattern="[+0-9\s\-]{10,20}" aria-describedby="wahint">
+            <label for="tg">Número de Telegram <span class="opt" id="tgopt">(opcional en este plan)</span></label>
+            <input id="tg" name="wa" type="tel" autocomplete="tel" placeholder="+52 55 1234 5678" pattern="[+0-9\s\-]{10,20}" aria-describedby="wahint">
             <p class="hint" id="wahint">Aquí te enviaremos las alertas de tu invernadero.</p>
           </div>
           <div class="field">
@@ -197,8 +197,8 @@ legend{font:700 1.3rem var(--display);padding:0;margin-bottom:18px}
 (function(){
   var plans={
     basic:{name:'Básico',price:'$299',alert:'Correo',wa:false},
-    advanced:{name:'Avanzado',price:'$599',alert:'Correo y WhatsApp',wa:true},
-    pro:{name:'Profesional',price:'$1,299',alert:'Correo y WhatsApp prioritario',wa:true}
+    advanced:{name:'Avanzado',price:'$599',alert:'Correo y Telegram',wa:true},
+    pro:{name:'Profesional',price:'$1,299',alert:'Correo y Telegram prioritario',wa:true}
   };
   var form=document.getElementById('reg'), wa=document.getElementById('wa');
   function current(){return form.querySelector('input[name="plan"]:checked').value}

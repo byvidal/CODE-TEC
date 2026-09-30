@@ -83,7 +83,7 @@
             </div>
             <ul style="color:var(--muted); line-height:1.8;">
                 <li>Sensores Industriales (SHT31, MHZ19)</li>
-                <li>Notificaciones vía WhatsApp</li>
+                <li>Notificaciones vía Telegram</li>
                 <li>12 meses de historial de telemetría</li>
             </ul>
             <button class="btn" style="width:100%; margin-top:20px; background:var(--water);" onclick="alert('Redirigiendo a la pasarela de pagos segura (Stripe)...')">Gestionar Suscripción</button>
@@ -91,28 +91,28 @@
 
         <div class="panel" style="border-color: var(--leaf); grid-column: 1 / -1;">
             <div class="panel-head">
-                <strong style="color: var(--leaf-dark);">Integración WhatsApp API</strong>
+                <strong style="color: var(--leaf-dark);">Integración Telegram API</strong>
                 <span class="badge badge-safe">Conectado</span>
             </div>
             <p style="color:var(--muted); margin-bottom: 25px;">Tus alertas están configuradas para ser enviadas al número registrado en el archivo <code>.env</code>. Puedes generar una alerta simulada directamente desde aquí para verificar que tu teléfono la recibe correctamente.</p>
-            <button class="btn btn-green" style="padding:15px; font-size:1.1rem; width:auto;" onclick="testWhatsApp(event)">📱 Enviar Mensaje de Prueba a WhatsApp</button>
+            <button class="btn btn-green" style="padding:15px; font-size:1.1rem; width:auto;" onclick="testTelegramBot(event)">📱 Enviar Mensaje de Prueba a Telegram</button>
         </div>
     </div>
 
 </div>
 <script>
-    async function testWhatsApp(event) {
+    async function testTelegramBot(event) {
         try {
             const btn = event.target;
             const originalText = btn.innerHTML;
             btn.innerHTML = 'Enviando...';
             btn.disabled = true;
             
-            const res = await fetch('/api/alerts/test-whatsapp', { method: 'POST' });
+            const res = await fetch('/api/alerts/test-telegram', { method: 'POST' });
             const data = await res.json();
             
             if(data.success) {
-                alert("¡Mensaje enviado con éxito! Revisa tu WhatsApp (CallMeBot).");
+                alert("¡Mensaje enviado con éxito! Revisa tu Telegram Bot Oficial.");
             } else {
                 alert("Hubo un error al enviar el mensaje. Revisa la consola del servidor.");
             }
