@@ -116,6 +116,7 @@ legend{font:700 1.3rem var(--display);padding:0;margin-bottom:18px}
             <span class="check" aria-hidden="true">✓</span>
             <h3>Básico</h3>
             <div class="price">$299<small>/mes</small></div>
+            <div style="color:var(--leaf); font-size:0.85rem; font-weight:700; margin-bottom:12px; display:inline-block; background:color-mix(in srgb,var(--leaf) 15%,transparent); padding:4px 8px; border-radius:6px;">🎁 7 días de prueba gratis</div>
             <ul>
               <li>Temperatura y humedad (DHT11)</li>
               <li>Luz ambiental (LDR)</li>
@@ -186,7 +187,10 @@ legend{font:700 1.3rem var(--display);padding:0;margin-bottom:18px}
       <h2>Resumen</h2>
       <div class="row"><span>Plan</span><strong id="sName">Básico</strong></div>
       <div class="row"><span>Alertas</span><strong id="sAlert">Correo</strong></div>
-      <div class="row"><span>Total mensual</span><span class="total" id="sTotal">$299</span></div>
+      <div class="row"><span id="sTotalLabel">Total mensual</span><span class="total" id="sTotal">$299</span></div>
+      <div id="sPromoMsg" style="background:color-mix(in srgb,var(--leaf) 15%,transparent); color:var(--leaf-dark); padding:10px; border-radius:8px; font-size:0.85rem; margin:12px 0 0; text-align:center; font-weight:500; display:none;">
+        🎁 <strong>7 días gratis</strong>. Después se te cobrará el precio normal (<span id="sNormalPrice"></span>/mes).
+      </div>
       <button class="btn" type="submit">Crear cuenta y continuar</button>
       <p class="fine">Podrás cambiar de plan más adelante.</p>
     </aside>
@@ -196,19 +200,32 @@ legend{font:700 1.3rem var(--display);padding:0;margin-bottom:18px}
 <script>
 (function(){
   var plans={
-    basic:{name:'Básico',price:'$299',alert:'Correo',wa:false},
-    advanced:{name:'Avanzado',price:'$599',alert:'Correo y Telegram',wa:true},
-    pro:{name:'Profesional',price:'$1,299',alert:'Correo y Telegram prioritario',wa:true}
+    basic:{name:'Básico',price:'$299',alert:'Correo',wa:false, trial:true},
+    advanced:{name:'Avanzado',price:'$599',alert:'Correo y Telegram',wa:true, trial:false},
+    pro:{name:'Profesional',price:'$1,299',alert:'Correo y Telegram prioritario',wa:true, trial:false}
   };
-  var form=document.getElementById('reg'), wa=document.getElementById('wa');
+  var form=document.getElementById('reg');
   function current(){return form.querySelector('input[name="plan"]:checked').value}
   function update(){
     var p=plans[current()];
     document.getElementById('sName').textContent=p.name;
     document.getElementById('sAlert').textContent=p.alert;
-    document.getElementById('sTotal').textContent=p.price;
-    wa.required=p.wa;
-    document.getElementById('waopt').hidden=p.wa;
+    
+    if (p.trial) {
+      document.getElementById('sTotalLabel').textContent = 'Total hoy';
+      document.getElementById('sTotal').textContent = '$0';
+      document.getElementById('sPromoMsg').style.display = 'block';
+      document.getElementById('sNormalPrice').textContent = p.price;
+    } else {
+      document.getElementById('sTotalLabel').textContent = 'Total mensual';
+      document.getElementById('sTotal').textContent = p.price;
+      document.getElementById('sPromoMsg').style.display = 'none';
+    }
+    
+    // Corregimos la referencia al campo de telegram (por name="wa")
+    if (form.wa) form.wa.required=p.wa;
+    var waopt = document.getElementById('tgopt'); // El id real del hint es tgopt
+    if(waopt) waopt.hidden=p.wa;
   }
   form.addEventListener('change',function(e){if(e.target.name==='plan')update()});
   document.getElementById('toggle').onclick=function(){
