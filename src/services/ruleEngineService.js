@@ -2,6 +2,7 @@ const alertRepo = require('../repositories/alertRepository');
 const actuatorRepo = require('../repositories/actuatorRepository');
 const eventRepo = require('../repositories/eventRepository');
 const whatsappService = require('./whatsappService');
+const telegramService = require('./telegramService');
 const ids = require('../utils/ids');
 const dates = require('../utils/dates');
 
@@ -87,10 +88,11 @@ async function createAlert(greenhouseId, zoneId, deviceId, type, severity, messa
         previousState: null, newState: 'active', reason: message, createdAt: dates.now()
     });
 
-    // Enviar alerta por WhatsApp
-    const emoji = severity === 'critical' ? '🚨' : '⚠️';
-    const waMessage = `*EDAFONEX ALERT* ${emoji}\n_Invernadero:_ ${greenhouseId}\n_Problema:_ ${message}\n_Revisa el Dashboard de inmediato._`;
-    whatsappService.sendAlert('+521234567890', waMessage).catch(console.error);
+    // Enviar alerta por WhatsApp y Telegram
+    const alertMessage = `⚠️ *Alerta de Sistema EDAFONEX*\nInvernadero: ${greenhouseId}\nCondición detectada: ${message}\nPor favor, verifique el panel de control.`;
+    
+    whatsappService.sendAlert('+521234567890', alertMessage).catch(console.error);
+    telegramService.sendAlert(alertMessage).catch(console.error);
     
     return alert;
 }
