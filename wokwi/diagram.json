@@ -25,6 +25,27 @@
       "attrs": { "travelLength": "30" }
     },
     {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot_soil",
+      "top": -150,
+      "left": -450,
+      "attrs": { "travelLength": "30" }
+    },
+    {
+      "type": "wokwi-photoresistor-sensor",
+      "id": "ldr",
+      "top": 50,
+      "left": -450,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot_water",
+      "top": 250,
+      "left": -450,
+      "attrs": { "travelLength": "30" }
+    },
+    {
       "type": "wokwi-led",
       "id": "led_pump",
       "top": -150,
@@ -61,6 +82,18 @@
     [ "esp:3V3", "pot_hum:VCC", "red", [ "v0" ] ],
     [ "esp:GND.1", "pot_hum:GND", "black", [ "v0" ] ],
     [ "esp:35", "pot_hum:SIG", "yellow", [ "v0" ] ],
+
+    [ "esp:3V3", "pot_soil:VCC", "red", [ "v0" ] ],
+    [ "esp:GND.1", "pot_soil:GND", "black", [ "v0" ] ],
+    [ "esp:32", "pot_soil:SIG", "green", [ "v0" ] ],
+
+    [ "esp:3V3", "ldr:VCC", "red", [ "v0" ] ],
+    [ "esp:GND.1", "ldr:GND", "black", [ "v0" ] ],
+    [ "esp:33", "ldr:AO", "cyan", [ "v0" ] ],
+
+    [ "esp:3V3", "pot_water:VCC", "red", [ "v0" ] ],
+    [ "esp:GND.1", "pot_water:GND", "black", [ "v0" ] ],
+    [ "esp:25", "pot_water:SIG", "purple", [ "v0" ] ],
 
     [ "esp:2", "res_pump:1", "blue", [ "v0" ] ],
     [ "res_pump:2", "led_pump:A", "blue", [ "v0" ] ],
