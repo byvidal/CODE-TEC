@@ -1,7 +1,7 @@
 {
-  "name": "pda-plataforma-apoyo-agricola",
+  "name": "edafonex-telemetry",
   "version": "1.0.0",
-  "description": "PDA (Plataforma de Apoyo Agricola): recomendaciones de cultivo y estimaciones de produccion para agricultores.",
+  "description": "Sistema de Adquisición de Datos y Teleproceso (Hackathon).",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -9,18 +9,12 @@
     "test": "node --test",
     "db:init": "node scripts/init-db.js",
     "db:seed": "node scripts/seed-db.js",
-    "db:reset": "node scripts/reset-db.js",
-    "simulator": "node simulator/index.js",
-    "simulator:normal": "node simulator/index.js --scenario=normal",
-    "simulator:dry": "node simulator/index.js --scenario=soil-dry",
-    "simulator:heat": "node simulator/index.js --scenario=heat",
-    "simulator:low-water": "node simulator/index.js --scenario=low-water",
-    "simulator:disconnect": "node simulator/index.js --scenario=disconnect"
+    "db:reset": "node scripts/reset-db.js"
   },
   "keywords": [
-    "agricultura",
-    "cultivos",
-    "open-meteo",
+    "iot",
+    "telemetry",
+    "esp32",
     "express",
     "hackathon"
   ],
@@ -30,7 +24,6 @@
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.22.3",
-    "pdfkit": "^0.15.2",
     "sqlite3": "^6.0.1"
   }
 }

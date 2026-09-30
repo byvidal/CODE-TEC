@@ -11,8 +11,6 @@ const alertRoutes = require('./routes/alerts');
 const actuatorRoutes = require('./routes/actuators');
 const eventRoutes = require('./routes/events');
 const dashboardRoutes = require('./routes/dashboard');
-const demoRoutes = require('./routes/demo');
-const billingRoutes = require('./routes/billing');
 
 const errorHandler = require('./middleware/errorHandler');
 
@@ -32,8 +30,6 @@ app.use('/api/alerts', alertRoutes);
 app.use('/api/actuators', actuatorRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/demo', demoRoutes);
-app.use('/api/billing', billingRoutes);
 
 app.use(errorHandler);
 

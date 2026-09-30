@@ -12,6 +12,9 @@ router.get('/', async (req, res, next) => {
 router.get('/status', async (req, res, next) => {
     try { res.json(await repo.getAll()); } catch(e) { next(e); }
 });
+router.get('/zone/:zoneId', async (req, res, next) => {
+    try { res.json(await repo.getByZoneId(req.params.zoneId)); } catch(e) { next(e); }
+});
 router.get('/:id', async (req, res, next) => {
     try { res.json(await repo.getById(req.params.id)); } catch(e) { next(e); }
 });

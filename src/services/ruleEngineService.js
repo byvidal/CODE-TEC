@@ -16,7 +16,8 @@ exports.evaluate = async (zone, reading, deviceId) => {
     const fan = actuators.find(a => a.type === 'fan' && a.zoneId === zone.id);
 
     // Rule: Low Water Level
-    let isWaterLow = waterLevel < 15;
+    const minWater = zone.waterLevelMin !== undefined ? zone.waterLevelMin : 15;
+    let isWaterLow = waterLevel < minWater;
     if (isWaterLow) {
         const al = await createAlert(zone.greenhouseId, zone.id, deviceId, 'LOW_WATER_TANK', 'critical', 'Nivel de tanque muy bajo.');
         if (al) alerts.push(al);

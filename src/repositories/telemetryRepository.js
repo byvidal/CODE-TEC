@@ -1,9 +1,8 @@
 const { query, run } = require('./db');
 exports.insertReading = async (r) => {
-    // Si no vienen co2 o ph, simulamos una pequeña fluctuación natural para la demo.
-    const co2 = r.co2 !== undefined ? r.co2 : (400 + Math.random() * 50);
-    const ph = r.ph !== undefined ? r.ph : (6.5 + Math.random() * 1.0);
-    const light = r.light !== undefined ? r.light : (800 + Math.random() * 200);
+    const co2 = r.co2 !== undefined ? r.co2 : null;
+    const ph = r.ph !== undefined ? r.ph : null;
+    const light = r.light !== undefined ? r.light : null;
 
     await run(`INSERT INTO telemetry_readings 
         (id, greenhouseId, zoneId, deviceId, timestamp, temperature, humidity, soilMoisture, light, waterLevel, co2, ph, receivedAt, valid) 
