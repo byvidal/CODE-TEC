@@ -1,7 +1,7 @@
 const alertRepo = require('../repositories/alertRepository');
 const actuatorRepo = require('../repositories/actuatorRepository');
 const eventRepo = require('../repositories/eventRepository');
-const whatsappService = require('./whatsappService');
+const telegramService = require('./telegramService');
 const ids = require('../utils/ids');
 const dates = require('../utils/dates');
 
@@ -89,8 +89,8 @@ async function createAlert(greenhouseId, zoneId, deviceId, type, severity, messa
 
     // Enviar alerta por WhatsApp
     const emoji = severity === 'critical' ? '🚨' : '⚠️';
-    const waMessage = `*EDAFONEX ALERT* ${emoji}\n_Invernadero:_ ${greenhouseId}\n_Problema:_ ${message}\n_Revisa el Dashboard de inmediato._`;
-    whatsappService.sendAlert('+521234567890', waMessage).catch(console.error);
+    const telegramMessage = `*EDAFONEX ALERT* ${emoji}\n_Invernadero:_ ${greenhouseId}\n_Problema:_ ${message}\n_Revisa el Dashboard de inmediato._`;
+    telegramService.sendAlert('+521234567890', telegramMessage).catch(console.error);
     
     return alert;
 }
