@@ -1,1 +1,74 @@
-{"version":1,"author":"Antigravity","editor":"wokwi","parts":[{"type":"board-esp32-devkit-v1","id":"esp","top":0,"left":0,"attrs":{}}],"connections":[],"dependencies":{"ArduinoJson":"^6.21.3"}}
+{
+  "version": 1,
+  "author": "Antigravity",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-v1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot_temp",
+      "top": -150,
+      "left": -250,
+      "attrs": { "travelLength": "30" }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot_hum",
+      "top": 50,
+      "left": -250,
+      "attrs": { "travelLength": "30" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_pump",
+      "top": -150,
+      "left": 150,
+      "attrs": { "color": "blue" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "res_pump",
+      "top": -100,
+      "left": 150,
+      "attrs": { "value": "330" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_fan",
+      "top": 50,
+      "left": 150,
+      "attrs": { "color": "green" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "res_fan",
+      "top": 100,
+      "left": 150,
+      "attrs": { "value": "330" }
+    }
+  ],
+  "connections": [
+    [ "esp:3V3", "pot_temp:VCC", "red", [ "v0" ] ],
+    [ "esp:GND.1", "pot_temp:GND", "black", [ "v0" ] ],
+    [ "esp:34", "pot_temp:SIG", "orange", [ "v0" ] ],
+
+    [ "esp:3V3", "pot_hum:VCC", "red", [ "v0" ] ],
+    [ "esp:GND.1", "pot_hum:GND", "black", [ "v0" ] ],
+    [ "esp:35", "pot_hum:SIG", "yellow", [ "v0" ] ],
+
+    [ "esp:2", "res_pump:1", "blue", [ "v0" ] ],
+    [ "res_pump:2", "led_pump:A", "blue", [ "v0" ] ],
+    [ "esp:GND.2", "led_pump:C", "black", [ "v0" ] ],
+
+    [ "esp:4", "res_fan:1", "green", [ "v0" ] ],
+    [ "res_fan:2", "led_fan:A", "green", [ "v0" ] ],
+    [ "esp:GND.2", "led_fan:C", "black", [ "v0" ] ]
+  ],
+  "dependencies": {}
+}

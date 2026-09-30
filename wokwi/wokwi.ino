@@ -7,8 +7,8 @@ const char* ssid = "Wokwi-GUEST";
 const char* password = "";
 
 // IMPORTANTE: Cambia "YOUR_LOCAL_IP" por la IP de tu computadora (ej. 192.168.1.XX) si usas Wokwi local
-const char* serverUrl = "http://YOUR_LOCAL_IP:3000/api/telemetry/readings";
-const char* actuatorsUrl = "http://YOUR_LOCAL_IP:3000/api/actuators/zone/zone_a";
+const char* serverUrl = "http://192.168.20.35:3000/api/telemetry/readings";
+const char* actuatorsUrl = "http://192.168.20.35:3000/api/actuators/zone/zone_a";
 
 // IMPORTANTE: Sustituye con tu token real configurado en el backend
 const char* deviceToken = "Bearer TU_TOKEN_DE_DISPOSITIVO"; 

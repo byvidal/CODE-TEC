@@ -10,7 +10,7 @@ exports.sendAlert = (phoneNumber, message) => {
         if (!apiKey || !targetPhone) {
             const timestamp = new Date(dates.now()).toLocaleTimeString('es-MX');
             console.log(`\n=================================================`);
-            console.log(`📱 [WHATSAPP API - SIMULACIÓN] - ${timestamp}`);
+            console.log(`📱 [WHATSAPP CALLMEBOT - SIMULACIÓN] - ${timestamp}`);
             console.log(`=================================================`);
             console.log(`Falta CALLMEBOT_API_KEY o WHATSAPP_PHONE_NUMBER en .env`);
             console.log(`Destinatario: ${targetPhone || 'Sin configurar'}`);

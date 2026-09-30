@@ -219,7 +219,6 @@ legend{font:700 1.3rem var(--display);padding:0;margin-bottom:18px}
   form.addEventListener('submit',function(e){
     e.preventDefault();
     if(!form.checkValidity()){form.reportValidity();return}
-    /* La contraseña no viaja en la URL. Sustituye este paso por tu llamada al backend. */
     var q=new URLSearchParams({plan:current(),nombre:form.nombre.value});
     localStorage.setItem('edafonex_auth', 'true');
     window.location.href='setup.html?'+q.toString();
